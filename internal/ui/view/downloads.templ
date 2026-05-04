@@ -3,6 +3,7 @@ package view
 import (
 	"github.com/applejuicenetz/ajnx/internal/domain"
 	"fmt"
+	"strings"
 )
 
 templ DownloadsPage(downloads []domain.Download, nickname string) {
@@ -74,7 +75,12 @@ templ DownloadRows(downloads []domain.Download) {
 			</td>
 			<!-- Dateiname -->
 			<td class="px-4 py-4 align-middle max-w-xs">
-				<span class="truncate block font-medium" title={ d.Filename }>{ d.Filename }</span>
+				<span class="truncate block font-medium" title={ d.Filename }>
+					{ d.Filename }
+					if part := formatPart(d.Filename); part != "" {
+						<span class="text-primary ml-1">{ part }</span>
+					}
+				</span>
 				<div class="flex items-center gap-2 mt-1">
 					<span class="text-[10px] text-text-muted bg-surface px-1.5 py-0.5 rounded border border-border">
 						Quellen: { fmt.Sprintf("%d/%d", countActiveSources(d.Sources), len(d.Sources)) }
@@ -240,10 +246,10 @@ func dlStatusLabel(d domain.Download) string {
 		return "Übertragen"
 	}
 	if hasOwnLimit {
-		return "Limit erreicht"
+		return "Wartend"
 	}
 	if bestPos > 0 {
-		return fmt.Sprintf("Wartet (%d)", bestPos)
+		return fmt.Sprintf("Wartend (%d)", bestPos)
 	}
 
 	return "Suche..."
@@ -327,5 +333,30 @@ func formatETA(seconds int64) string {
 		return fmt.Sprintf("%dm %ds", seconds/60, seconds%60)
 	}
 	return fmt.Sprintf("%dh %dm", seconds/3600, (seconds%3600)/60)
+}
+
+func formatPart(filename string) string {
+	// Logik analog zu subs::parts in der PHP-GUI
+	if strings.Contains(strings.ToLower(filename), "part3") {
+		return "| Part: 3"
+	}
+	if strings.Contains(strings.ToLower(filename), "part2") {
+		return "| Part: 2"
+	}
+	if idx := strings.Index(strings.ToLower(filename), "part"); idx != -1 {
+		// Suche nach einer Ziffer nach "part" oder am Ende (Legacy Logik)
+		// Die PHP-GUI hat substr($part, -5, -4) gemacht.
+		// Wir machen es etwas robuster:
+		lower := strings.ToLower(filename)
+		pIdx := strings.Index(lower, "part")
+		if pIdx+4 < len(filename) {
+			char := filename[pIdx+4]
+			if char >= '0' && char <= '9' {
+				return fmt.Sprintf("| Part: %c", char)
+			}
+		}
+		return "| Part: 1"
+	}
+	return ""
 }
 
