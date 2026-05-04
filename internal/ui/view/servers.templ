@@ -1,0 +1,97 @@
+package view
+
+import (
+	"github.com/applejuicenetz/ajnx/internal/domain"
+	"fmt"
+)
+
+templ ServersPage(servers []domain.Server, nickname string) {
+	@Layout("Server", "server", nickname) {
+		<div class="space-y-6">
+			<!-- Page Header -->
+			<div class="flex items-center justify-between">
+				<h2 class="text-3xl font-bold flex items-center gap-3">
+					<svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+					Serverliste
+					<span class="text-sm font-normal text-text-muted bg-surface px-2 py-1 rounded-md border border-border">{ fmt.Sprint(len(servers)) }</span>
+				</h2>
+			</div>
+
+			<!-- Grid Layout for all screen sizes -->
+			<div 
+				id="servers-grid" 
+				class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+				hx-get="/partials/servers-cards" 
+				hx-trigger="every 5s, refreshServers from:body" 
+				hx-swap="innerHTML"
+			>
+				@ServerCards(servers)
+			</div>
+		</div>
+	}
+}
+
+templ ServerCards(servers []domain.Server) {
+	if len(servers) == 0 {
+		<div class="col-span-full py-20 text-center bg-surface rounded-2xl border border-dashed border-border">
+			<div class="flex flex-col items-center gap-4 opacity-40">
+				<svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+				<p class="text-lg font-medium">Keine Server verfügbar</p>
+			</div>
+		</div>
+	}
+	for _, s := range servers {
+		<div class={ "group relative bg-surface border rounded-2xl p-5 shadow-sm transition-all duration-300 hover:shadow-md ", 
+			templ.KV("border-status-ok ring-1 ring-status-ok/20 bg-status-ok/[0.02]", s.Connected),
+			templ.KV("border-border hover:border-primary/50", !s.Connected) }>
+			
+			<!-- Connected Indicator (Top Right) -->
+			if s.Connected {
+				<div class="absolute top-4 right-4 flex items-center gap-1.5 bg-status-ok text-white px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+					<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+					Aktiv
+				</div>
+			}
+
+			<!-- Content -->
+			<div class="flex flex-col h-full justify-between">
+				<div>
+					<h3 class={ "font-bold text-lg mb-1 truncate pr-16 ", templ.KV("text-status-ok", s.Connected) } title={ s.Name }>{ s.Name }</h3>
+					<p class="text-xs text-text-muted">
+						if !s.LastSeen.IsZero() {
+							Zuletzt gesehen: { s.LastSeen.Format("02.01. 15:04") }
+						} else {
+							Noch nie gesehen
+						}
+					</p>
+				</div>
+
+				<div class="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
+					<div class="flex gap-2">
+						if !s.Connected {
+							<form hx-post={ string(templ.SafeURL("/servers/" + s.ID + "/connect")) } hx-swap="none">
+								<button type="submit" class="flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
+									<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+									Verbinden
+								</button>
+							</form>
+						} else {
+							<form hx-post="/servers/disconnect" hx-swap="none" hx-confirm="Verbindung zum Server wirklich trennen?">
+								<button type="submit" class="flex items-center gap-2 bg-status-err/10 text-status-err hover:bg-status-err hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
+									<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+									Trennen
+								</button>
+							</form>
+						}
+					</div>
+
+					<form hx-post={ string(templ.SafeURL("/servers/" + s.ID + "/remove")) } hx-swap="none" hx-confirm="Server wirklich löschen?">
+						<button type="submit" class="p-2 text-text-muted hover:text-status-err hover:bg-status-err/10 rounded-lg transition-all">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+						</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	}
+}

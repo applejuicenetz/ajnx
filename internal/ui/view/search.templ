@@ -1,0 +1,151 @@
+package view
+
+import (
+	"fmt"
+	"github.com/applejuicenetz/ajnx/internal/domain"
+)
+
+// SearchPage rendert die Suchseite.
+templ SearchPage(activePage string, nickname string, searches []domain.Search) {
+	@Layout("Suche", activePage, nickname) {
+		<div class="space-y-8">
+			<!-- ─── Search Bar ─── -->
+			<div class="bg-surface border border-border rounded-2xl p-6 shadow-sm">
+				<h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+					<svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+					Netzwerk durchsuchen
+				</h2>
+				<form 
+					hx-post="/search" 
+					hx-target="#search-results-container"
+					hx-indicator="#search-indicator"
+					class="flex gap-3"
+					hx-on::after-request="if(event.detail.successful) this.reset()"
+				>
+					<div class="relative flex-1">
+						<input 
+							type="text" 
+							name="query" 
+							placeholder="Dateiname, Tag oder Hash..." 
+							class="w-full bg-background border border-border rounded-xl px-5 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all pr-12"
+							required
+						/>
+						<div id="search-indicator" class="htmx-indicator absolute right-4 top-1/2 -translate-y-1/2">
+							<div class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+						</div>
+					</div>
+					<button type="submit" class="bg-primary text-background font-bold px-8 py-3 rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+						Suchen
+					</button>
+				</form>
+			</div>
+
+			<!-- ─── Active Searches & Results ─── -->
+			<div id="search-results-container" hx-get="/partials/search-results" hx-trigger="every 10s" hx-swap="innerHTML">
+				@SearchResults(searches)
+			</div>
+		</div>
+	}
+}
+
+// min5 gibt den kleineren der beiden Werte zurück, begrenzt auf max 5.
+func min5(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// SearchResults rendert die Liste der aktiven Suchen und deren Ergebnisse.
+templ SearchResults(searches []domain.Search) {
+	if len(searches) == 0 {
+		<div class="flex flex-col items-center justify-center py-20 text-text-muted opacity-50">
+			<svg class="w-20 h-20 mb-4" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+			<p class="text-xl">Noch keine aktiven Suchen</p>
+		</div>
+	} else {
+		<div class="space-y-6">
+			for _, s := range searches {
+				<div class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+					<!-- Search Header -->
+					<div class="px-6 py-4 bg-background/50 border-b border-border flex items-center justify-between">
+						<div class="flex items-center gap-4">
+							<div class={ "w-3 h-3 rounded-full", templ.KV("bg-status-ok animate-pulse", s.Running), templ.KV("bg-text-muted", !s.Running) }></div>
+							<h3 class="font-bold text-lg">"{ s.Query }"</h3>
+							<span class="text-xs font-medium bg-gray-800 text-text-muted px-2 py-0.5 rounded-full border border-border">
+								{ fmt.Sprintf("%d Ergebnisse", s.FoundFiles) }
+							</span>
+						</div>
+						<div class="flex items-center gap-3">
+							if s.Running {
+								<span class="text-xs text-text-muted italic">Suche läuft...</span>
+							}
+							<button 
+								hx-post={ fmt.Sprintf("/search/%s/cancel", s.ID) }
+								hx-target="closest .bg-surface"
+								hx-swap="delete"
+								class="p-2 text-status-error hover:bg-status-error/10 rounded-lg transition-colors"
+								title="Suche abbrechen"
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+							</button>
+						</div>
+					</div>
+
+					<!-- Results Table -->
+					<div class="overflow-x-auto">
+						<table class="w-full text-left border-collapse">
+							<thead>
+								<tr class="bg-background/30 text-text-muted text-xs uppercase tracking-wider">
+									<th class="px-6 py-3 font-semibold">Dateiname</th>
+									<th class="px-6 py-3 font-semibold">Größe</th>
+									<th class="px-6 py-3 font-semibold">Quellen</th>
+									<th class="px-6 py-3 font-semibold text-right">Aktion</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-border/50 text-sm">
+								for _, res := range s.Results {
+									<tr class="hover:bg-primary/5 transition-colors group">
+										<td class="px-6 py-4">
+											<div class="flex flex-col">
+												<span class="font-medium text-text-main group-hover:text-primary transition-colors truncate max-w-md" title={ res.Names[0].Name }>
+													{ res.Names[0].Name }
+												</span>
+												<span class="text-xs text-text-muted font-mono">{ res.Hash }</span>
+											</div>
+										</td>
+										<td class="px-6 py-4 text-text-muted whitespace-nowrap">
+											{ formatSize(res.Size) }
+										</td>
+										<td class="px-6 py-4">
+											<div class="flex items-center gap-2" title={ fmt.Sprintf("%d Quellen im Netzwerk", res.Names[0].Count) }>
+												<span class="font-bold text-text-main">{ fmt.Sprintf("%d", res.Names[0].Count) }</span>
+												<div class="flex gap-0.5">
+													for i := 0; i < 5; i++ {
+														<div class={ "w-1 h-3 rounded-full", templ.KV("bg-primary", res.Names[0].Count > 0 && i < min5(res.Names[0].Count, 5)), templ.KV("bg-gray-800", res.Names[0].Count == 0 || i >= min5(res.Names[0].Count, 5)) }></div>
+													}
+												</div>
+											</div>
+										</td>
+										<td class="px-6 py-4 text-right">
+											<button 
+												hx-post="/links"
+												hx-vals={ fmt.Sprintf(`{"link": "ajfsp://file|%s|%s|%d/"}`, res.Names[0].Name, res.Hash, res.Size) }
+												hx-swap="none"
+												class="bg-surface border border-border hover:border-primary hover:text-primary px-4 py-2 rounded-lg transition-all text-xs font-bold flex items-center gap-2 ml-auto shadow-sm"
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+												Laden
+											</button>
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			}
+		</div>
+	}
+}
+

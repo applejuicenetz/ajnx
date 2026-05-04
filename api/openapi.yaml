@@ -1,0 +1,67 @@
+openapi: 3.0.3
+info:
+  title: AJNX Gateway API
+  description: REST API für die moderne appleJuice GUI (AJNX).
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /auth/login:
+    post:
+      summary: Benutzer-Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                host:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login erfolgreich
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+  /status:
+    get:
+      summary: Globaler Status
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Aktueller Status
+  /downloads:
+    get:
+      summary: Download-Liste
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste aller Downloads
+  /downloads/{id}/pause:
+    post:
+      summary: Download pausieren
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Aktion akzeptiert
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer

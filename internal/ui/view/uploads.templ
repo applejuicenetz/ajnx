@@ -1,0 +1,153 @@
+package view
+
+import (
+	"github.com/applejuicenetz/ajnx/internal/domain"
+	"fmt"
+)
+
+templ UploadsPage(uploads []domain.Upload, nickname string) {
+	@Layout("Uploads", "uploads", nickname) {
+		<div class="space-y-4">
+			<!-- Page Header -->
+			<div class="flex items-center justify-between">
+				<h2 class="text-3xl font-bold">
+					Uploads ({ fmt.Sprint(len(uploads)) })
+				</h2>
+			</div>
+
+			<!-- Desktop: Tabelle -->
+			<div class="hidden lg:block overflow-x-auto rounded-lg border border-border">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="bg-surface text-text-muted text-xs uppercase tracking-wider border-b border-border">
+							<th class="px-4 py-3 text-left">Benutzer</th>
+							<th class="px-4 py-3 text-left">Datei</th>
+							<th class="px-4 py-3 text-left w-32">Status</th>
+							<th class="px-4 py-3 text-left w-32">Übertragen</th>
+							<th class="px-4 py-3 text-left w-24">Speed</th>
+							<th class="px-4 py-3 text-left w-20">Queue</th>
+						</tr>
+					</thead>
+					<tbody id="uploads-body" hx-get="/partials/uploads-list" hx-trigger="every 3s, refreshUploads from:body" hx-swap="innerHTML">
+						@UploadRows(uploads)
+					</tbody>
+				</table>
+			</div>
+
+			<!-- Mobile: Cards -->
+			<div class="lg:hidden space-y-3" id="uploads-cards" hx-get="/partials/uploads-cards" hx-trigger="every 3s, refreshUploads from:body" hx-swap="innerHTML">
+				@UploadCards(uploads)
+			</div>
+		</div>
+	}
+}
+
+templ UploadRows(uploads []domain.Upload) {
+	if len(uploads) == 0 {
+		<tr>
+			<td colspan="6" class="px-4 py-16 text-center text-text-muted">
+				<div class="flex flex-col items-center gap-3 opacity-50">
+					<svg class="w-12 h-12" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+					<p class="text-sm">Aktuell keine Uploads</p>
+				</div>
+			</td>
+		</tr>
+	}
+	for _, u := range uploads {
+		<tr class="group border-b border-border hover:bg-gray-800/50 transition-colors">
+			<td class="px-4 py-4 align-middle">
+				<div class="flex items-center gap-3">
+					<span class="font-medium">{ u.Nickname }</span>
+					<span class="text-[10px] text-text-muted bg-surface px-1.5 py-0.5 rounded border border-border">{ u.Version }</span>
+				</div>
+			</td>
+			<td class="px-4 py-4 align-middle max-w-xs">
+				<span class="truncate block text-text-muted text-xs" title={ u.Filename }>{ u.Filename }</span>
+			</td>
+			<td class="px-4 py-4 align-middle">
+				<span class={ "text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ", ulStatusClass(u.Status) }>
+					if u.Status == domain.UploadTransferring {
+						<span class="w-1.5 h-1.5 rounded-full bg-status-ok animate-pulse"></span>
+					}
+					{ ulStatusLabel(u.Status) }
+				</span>
+			</td>
+			<td class="px-4 py-4 align-middle text-text-muted">
+				{ formatSize(u.UploadedBytes) }
+			</td>
+			<td class="px-4 py-4 align-middle text-status-ok font-mono font-bold">
+				if u.SpeedBps > 0 {
+					{ formatSpeed(u.SpeedBps) }
+				} else {
+					<span class="text-text-muted font-normal">-</span>
+				}
+			</td>
+			<td class="px-4 py-4 align-middle text-text-muted">
+				if u.QueuePosition > 0 {
+					{ fmt.Sprint(u.QueuePosition) }
+				} else {
+					-
+				}
+			</td>
+		</tr>
+	}
+}
+
+templ UploadCards(uploads []domain.Upload) {
+	if len(uploads) == 0 {
+		<div class="flex flex-col items-center justify-center py-16 text-text-muted opacity-50 gap-3">
+			<svg class="w-12 h-12" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+			<p class="text-sm">Aktuell keine Uploads</p>
+		</div>
+	}
+	for _, u := range uploads {
+		<div class="bg-surface rounded-lg p-4 border border-border">
+			<div class="flex items-start justify-between mb-2">
+				<div>
+					<p class="font-medium text-sm">{ u.Nickname }</p>
+					<p class="text-[10px] text-text-muted truncate max-w-[200px]">{ u.Filename }</p>
+				</div>
+				if u.Status == domain.UploadTransferring {
+					<span class="text-status-ok text-[10px] font-bold uppercase">{ formatSpeed(u.SpeedBps) }</span>
+				}
+			</div>
+			<div class="flex items-center justify-between mt-3 pt-3 border-t border-border/50 text-[10px] text-text-muted uppercase tracking-widest">
+				<span>{ formatSize(u.UploadedBytes) }</span>
+				if u.QueuePosition > 0 {
+					<span>Queue: { fmt.Sprint(u.QueuePosition) }</span>
+				}
+				<span class={ "text-[10px] font-bold uppercase ", ulStatusClass(u.Status) }>
+					{ ulStatusLabel(u.Status) }
+				</span>
+			</div>
+		</div>
+	}
+}
+
+func ulStatusLabel(s domain.UploadStatus) string {
+	switch s {
+	case domain.UploadTransferring:
+		return "Übertragung"
+	case domain.UploadWaiting:
+		return "Wartet"
+	case domain.UploadConnecting:
+		return "Verbinde..."
+	case domain.UploadError:
+		return "Fehler"
+	}
+	return "Unbekannt"
+}
+
+func ulStatusClass(s domain.UploadStatus) string {
+	switch s {
+	case domain.UploadTransferring:
+		return "text-status-ok"
+	case domain.UploadWaiting:
+		return "text-text-muted"
+	case domain.UploadConnecting:
+		return "text-status-warn"
+	case domain.UploadError:
+		return "text-status-err"
+	}
+	return "text-text-muted"
+}

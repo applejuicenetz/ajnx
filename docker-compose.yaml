@@ -1,0 +1,39 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    image: ajnx-gateway:latest
+    container_name: ajnx-gateway
+    environment:
+      - GATEWAY_PORT=${GATEWAY_PORT:-9859}
+      - SETUP_LOCK_PATH=/data/setup.lock
+    ports:
+      - "${GATEWAY_PORT:-9859}:${GATEWAY_PORT:-9859}"
+    user: "1000:1000"
+    volumes:
+      - ./data/ui:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: docker/ui.Dockerfile
+    image: ajnx-ui:latest
+    container_name: ajnx-ui
+    environment:
+      - UI_PORT=${UI_PORT:-9858}
+      - UI_GATEWAY_URL=http://gateway:${GATEWAY_PORT:-9859}
+      - SETUP_LOCK_PATH=/data/setup.lock
+    ports:
+      - "${UI_PORT:-9858}:${UI_PORT:-9858}"
+    user: "1000:1000"
+    depends_on:
+      - gateway
+    volumes:
+      - ./data/ui:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

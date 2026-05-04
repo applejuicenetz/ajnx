@@ -1,0 +1,28 @@
+package view
+
+// Logo rendert das AJNX-Markenzeichen: stilisierter Apfel mit Download-Pfeil.
+// cssClass steuert Größe und ggf. Filter (z.B. "w-10 h-12" oder "w-32 h-36").
+templ Logo(cssClass string) {
+	<svg
+		class={ cssClass }
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 36 40"
+		fill="none"
+		aria-hidden="true"
+	>
+		<!-- Apfelkörper -->
+		<path
+			fill="currentColor"
+			d="M18 6.5C15.5 6.5 13.8 5.2 12 5.2C7.8 5.2 4 9.8 4 16.5C4 26 9.5 38 15 38C16.8 38 18 36.8 18 36.8C18 36.8 19.2 38 21 38C26.5 38 32 26 32 16.5C32 9.8 28.2 5.2 24 5.2C22.2 5.2 20.5 6.5 18 6.5Z"
+		/>
+		<!-- Stiel + Blatt -->
+		<path
+			fill="currentColor"
+			d="M18 6.5C18 6.5 19 3 23 2C22 4.5 20 5.8 18 6.5Z"
+		/>
+		<!-- Download-Pfeil (Hintergrundfarbe als Aussparung) -->
+		<line x1="18" y1="14" x2="18" y2="24" stroke="#111827" stroke-width="2.5" stroke-linecap="round"/>
+		<polyline points="13,21 18,26 23,21" fill="none" stroke="#111827" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+		<line x1="12" y1="29" x2="24" y2="29" stroke="#111827" stroke-width="2.5" stroke-linecap="round"/>
+	</svg>
+}

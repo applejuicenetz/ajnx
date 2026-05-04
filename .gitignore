@@ -1,0 +1,13 @@
+# Go related
+bin/
+dist/
+vendor/
+*.exe
+*.test
+*.prof
+
+# OS related
+.DS_Store
+Thumbs.db
+.env
+data/
