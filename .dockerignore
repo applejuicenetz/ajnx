@@ -6,14 +6,6 @@ dist/
 .git/
 .github/
 
-# Documentation
-Dokumentation/
-Vision/
-
-# Local configuration
-.env
-Todo.json
-
 # Go
 vendor/
 *.test
@@ -22,6 +14,3 @@ vendor/
 # OS
 .DS_Store
 Thumbs.db
-index.php
-.claude/
-everything-claude-code/
