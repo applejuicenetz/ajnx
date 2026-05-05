@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"log"
 	"net/http"
 	"os"
@@ -47,8 +45,6 @@ func main() {
 		if gatewayToken == "" {
 			gatewayToken = sessionSecret
 		}
-	} else {
-		log.Println("Setup noch nicht abgeschlossen – Setup-Wizard wird beim ersten Aufruf gestartet.")
 	}
 
 	setupStore := setup.NewSessionStore()
@@ -61,6 +57,7 @@ func main() {
 	searchHandler := handler.NewSearchHandler(gatewayURL, gatewayToken, nickname)
 	settingsHandler := handler.NewSettingsHandler(setupMgr, gatewayURL, gatewayToken, nickname)
 	serversHandler := handler.NewServersHandler(gatewayURL, gatewayToken, nickname)
+	sharesHandler := handler.NewSharesHandler(gatewayURL, gatewayToken, nickname)
 	aboutHandler := handler.NewAboutHandler(nickname)
 	helpHandler := handler.NewHelpHandler(nickname)
 
@@ -102,10 +99,35 @@ func main() {
 
 	// Server-Routen
 	mux.Handle("/server", serversHandler)
+	mux.Handle("/shares", sharesHandler)
+	mux.Handle("/shares/", sharesHandler)
 	mux.Handle("/servers/", serversHandler)
 	mux.Handle("/partials/servers-cards", serversHandler)
 	mux.Handle("/about", aboutHandler)
 	mux.Handle("/help", helpHandler)
+
+	// Geheim-Trigger für den nativen Core
+	mux.HandleFunc("/nativecore=aktiv", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "ajnx_native",
+			Value:    "true",
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   86400 * 365, // 1 Jahr
+		})
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
+
+	mux.HandleFunc("/nativecore=aus", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "ajnx_native",
+			Value:    "false",
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   -1,
+		})
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
 
 
 	// Haupt-Routen hinter SetupGuard + LoginGuard
@@ -143,7 +165,6 @@ func main() {
 	}
 }
 
-// buildMux registriert den guardedMain-Handler im Mux und gibt den Mux zurück.
 func buildMux(mux *http.ServeMux, guardedMain http.Handler) *http.ServeMux {
 	mux.Handle("/", guardedMain)
 	return mux
@@ -154,12 +175,4 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
-}
-
-func randomHex(n int) (string, error) {
-	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
 }

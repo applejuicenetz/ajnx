@@ -5,7 +5,7 @@ COPY . .
 RUN cd web/tailwind && npm install && npm run build
 
 # Stage 2: Go Build
-FROM golang:1.23-alpine AS build
+FROM golang:1.24-alpine AS build
 WORKDIR /build
 RUN apk add --no-cache git
 COPY . .

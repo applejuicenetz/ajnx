@@ -11,3 +11,5 @@ vendor/
 Thumbs.db
 .env
 data/
+internal/core/fixtures/
+internal/core/native/

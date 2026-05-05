@@ -19,11 +19,13 @@ type CoreClient interface {
 	Downloads(ctx context.Context) ([]domain.Download, error)
 	Uploads(ctx context.Context) ([]domain.Upload, error)
 	Servers(ctx context.Context) ([]domain.Server, error)
+	FullUpdate(ctx context.Context) (*domain.Information, []domain.Download, []domain.Upload, error)
 
 	// Aktionen
 	PauseDownload(ctx context.Context, ids ...string) error
 	ResumeDownload(ctx context.Context, ids ...string) error
 	CancelDownload(ctx context.Context, ids ...string) error
+	SetPowerDownload(ctx context.Context, id string, powerDownload float64) error
 	CleanDownloadList(ctx context.Context) error
 	ProcessLink(ctx context.Context, link string) error
 	ShutdownCore(ctx context.Context) error
@@ -41,6 +43,9 @@ type CoreClient interface {
 	// Einstellungen
 	GetSettings(ctx context.Context) (XMLSettings, error)
 	UpdateSettings(ctx context.Context, s XMLSettings) error
+	
+	Shares(ctx context.Context) ([]domain.Share, error)
+	GetShareDirs(ctx context.Context) ([]domain.ShareDir, error)
 	SetShares(ctx context.Context, shares []domain.ShareDir) error
 
 	// Authentifizierung

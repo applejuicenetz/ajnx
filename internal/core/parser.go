@@ -15,7 +15,7 @@ func DecodeXML(r io.Reader, v interface{}) error {
 
 // XMLGeneralInformation für information.xml
 type XMLGeneralInformation struct {
-	XMLName xml.Name `xml:"applejuice"`
+	XMLName xml.Name `xml:"gerneralinformation"`
 	General struct {
 		Version string `xml:"version"`
 		System  string `xml:"system"`
@@ -65,6 +65,8 @@ type XMLInformation struct {
 	DownloadSpeed      int64 `xml:"downloadspeed,attr"`
 	OpenConnections    int   `xml:"openconnections,attr"`
 	MaxUploadPositions int   `xml:"maxuploadpositions,attr"`
+	ShareFiles         int64 `xml:"sharefiles,attr"`
+	ShareSize          int64 `xml:"sharesize,attr"`
 }
 
 type XMLNetworkInfo struct {
@@ -113,6 +115,28 @@ type XMLServer struct {
 	Port      int    `xml:"port,attr"`
 	LastSeen  int64  `xml:"lastseen,attr"`
 	Connected int    `xml:"connected,attr"`
+}
+
+type XMLShareList struct {
+	XMLName xml.Name   `xml:"shares"`
+	Shares  []XMLShare `xml:"share"`
+	// Manche Cores schachteln die Liste in ein <sharelist> Tag
+	Nested struct {
+		Shares []XMLShare `xml:"share"`
+	} `xml:"sharelist"`
+}
+
+type XMLShare struct {
+	ID            string `xml:"id,attr"`
+	Hash          string `xml:"checksum,attr"`
+	AltHash       string `xml:"hash,attr"` // Alternativ-Tag für manche Core-Versionen
+	Size          int64  `xml:"size,attr"`
+	Filename      string `xml:"filename,attr"`
+	ShortFilename string `xml:"shortfilename,attr"`
+	Priority      int    `xml:"priority,attr"`
+	LastAsked     int64  `xml:"lastasked,attr"`
+	AskCount      int64  `xml:"askcount,attr"`
+	SearchCount   int64  `xml:"searchcount,attr"`
 }
 
 type XMLDownloadList struct {

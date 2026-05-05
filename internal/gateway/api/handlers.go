@@ -8,11 +8,20 @@ import (
 	"strings"
 
 	"github.com/applejuicenetz/ajnx/internal/core"
+	"github.com/applejuicenetz/ajnx/internal/domain"
 	"github.com/go-chi/chi/v5"
 )
 
+var linkRegex = regexp.MustCompile(`(ajfsp://|web\+ajlink://|web\+ajfsp://)[^<>"\r\n]+`)
+
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
-	info := s.state.GetInformation()
+	var info *domain.Information
+	if s.isNative(r) {
+		info, _ = s.nativeClient.Information(r.Context())
+	} else {
+		info = s.state.GetInformation()
+	}
+
 	if info == nil {
 		errStr := s.state.GetLastError()
 		if errStr == "" {
@@ -27,21 +36,36 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDownloads(w http.ResponseWriter, r *http.Request) {
-	downloads := s.state.GetDownloads()
+	var downloads []domain.Download
+	if s.isNative(r) {
+		downloads, _ = s.nativeClient.Downloads(r.Context())
+	} else {
+		downloads = s.state.GetDownloads()
+	}
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(downloads)
 }
 
 func (s *Server) handleUploads(w http.ResponseWriter, r *http.Request) {
-	uploads := s.state.GetUploads()
+	var uploads []domain.Upload
+	if s.isNative(r) {
+		uploads, _ = s.nativeClient.Uploads(r.Context())
+	} else {
+		uploads = s.state.GetUploads()
+	}
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(uploads)
 }
 
 func (s *Server) handleServers(w http.ResponseWriter, r *http.Request) {
-	servers := s.state.GetServers()
+	var servers []domain.Server
+	if s.isNative(r) {
+		servers, _ = s.nativeClient.Servers(r.Context())
+	} else {
+		servers = s.state.GetServers()
+	}
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(servers)
@@ -49,7 +73,7 @@ func (s *Server) handleServers(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDownloadPause(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if err := s.client.PauseDownload(r.Context(), id); err != nil {
+	if err := s.getClient(r).PauseDownload(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -58,7 +82,7 @@ func (s *Server) handleDownloadPause(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDownloadResume(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if err := s.client.ResumeDownload(r.Context(), id); err != nil {
+	if err := s.getClient(r).ResumeDownload(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -67,11 +91,28 @@ func (s *Server) handleDownloadResume(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDownloadCancel(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if err := s.client.CancelDownload(r.Context(), id); err != nil {
+	if err := s.getClient(r).CancelDownload(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (s *Server) handleDownloadPDL(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var payload struct {
+		Value float64 `json:"value"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.getClient(r).SetPowerDownload(r.Context(), id, payload.Value); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleProcessLink(w http.ResponseWriter, r *http.Request) {
@@ -79,15 +120,11 @@ func (s *Server) handleProcessLink(w http.ResponseWriter, r *http.Request) {
 		Link string `json:"link"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		fmt.Printf("[Gateway] Fehler beim Decodieren des Bodies: %v\n", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Regex zum Finden aller appleJuice Links
-	// Wir erlauben Leerzeichen im Link (für Dateinamen), stoppen aber bei typischen Delimitern oder Zeilenumbruch.
-	re := regexp.MustCompile(`(ajfsp://|web\+ajlink://|web\+ajfsp://)[^<>"\r\n]+`)
-	matches := re.FindAllString(payload.Link, -1)
+	matches := linkRegex.FindAllString(payload.Link, -1)
 
 	if len(matches) == 0 {
 		// Falls kein Protokoll gefunden wurde, versuchen wir es als einen einzelnen, 
@@ -105,13 +142,9 @@ func (s *Server) handleProcessLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("[Gateway] Verarbeite %d Links...\n", len(matches))
-
 	var errs []error
 	for _, link := range matches {
-		fmt.Printf("[Gateway] Sende Link an Core: %s\n", link)
-		if err := s.client.ProcessLink(r.Context(), link); err != nil {
-			fmt.Printf("[Gateway] Fehler bei Link %s: %v\n", link, err)
+		if err := s.getClient(r).ProcessLink(r.Context(), link); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -122,7 +155,6 @@ func (s *Server) handleProcessLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("[Gateway] Verarbeitung abgeschlossen (%d erfolgreich)\n", len(matches)-len(errs))
 	w.WriteHeader(http.StatusAccepted)
 }
 
@@ -131,7 +163,6 @@ func (s *Server) handleSearchStart(w http.ResponseWriter, r *http.Request) {
 		Query string `json:"query"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		fmt.Printf("[Gateway] Fehler beim Decodieren des Search-Bodies: %v\n", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -140,33 +171,27 @@ func (s *Server) handleSearchStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("[Gateway] Starte Core-Suche für: %q\n", payload.Query)
-	if err := s.client.StartSearch(r.Context(), payload.Query); err != nil {
-		fmt.Printf("[Gateway] Core-Suche-Fehler: %v\n", err)
+	if err := s.getClient(r).StartSearch(r.Context(), payload.Query); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("[Gateway] Suche erfolgreich an Core übergeben.")
 	w.WriteHeader(http.StatusAccepted)
 }
 
 func (s *Server) handleSearchGet(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("[Gateway] Abfrage der Suchergebnisse vom Core...")
-	searches, err := s.client.Searches(r.Context())
+	searches, err := s.getClient(r).Searches(r.Context())
 	if err != nil {
-		fmt.Printf("[Gateway] Fehler beim Abrufen der Suchen: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Printf("[Gateway] %d Suchen vom Core empfangen. Sende an UI...\n", len(searches))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(searches)
 }
 
 func (s *Server) handleSearchCancel(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if err := s.client.CancelSearch(r.Context(), id); err != nil {
+	if err := s.getClient(r).CancelSearch(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -174,7 +199,7 @@ func (s *Server) handleSearchCancel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleSettingsGet(w http.ResponseWriter, r *http.Request) {
-	settings, err := s.client.GetSettings(r.Context())
+	settings, err := s.getClient(r).GetSettings(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -191,7 +216,7 @@ func (s *Server) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.client.UpdateSettings(r.Context(), settings); err != nil {
+	if err := s.getClient(r).UpdateSettings(r.Context(), settings); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -199,7 +224,7 @@ func (s *Server) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCleanDownloads(w http.ResponseWriter, r *http.Request) {
-	if err := s.client.CleanDownloadList(r.Context()); err != nil {
+	if err := s.getClient(r).CleanDownloadList(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -208,7 +233,7 @@ func (s *Server) handleCleanDownloads(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleServerConnect(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if err := s.client.ConnectServer(r.Context(), id); err != nil {
+	if err := s.getClient(r).ConnectServer(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -216,7 +241,7 @@ func (s *Server) handleServerConnect(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleServerDisconnect(w http.ResponseWriter, r *http.Request) {
-	if err := s.client.DisconnectServer(r.Context()); err != nil {
+	if err := s.getClient(r).DisconnectServer(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -225,7 +250,7 @@ func (s *Server) handleServerDisconnect(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleServerRemove(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if err := s.client.RemoveServer(r.Context(), id); err != nil {
+	if err := s.getClient(r).RemoveServer(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -233,7 +258,39 @@ func (s *Server) handleServerRemove(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCoreShutdown(w http.ResponseWriter, r *http.Request) {
-	if err := s.client.ShutdownCore(r.Context()); err != nil {
+	if err := s.getClient(r).ShutdownCore(r.Context()); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+func (s *Server) handleShares(w http.ResponseWriter, r *http.Request) {
+	shares, err := s.getClient(r).Shares(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(shares)
+}
+
+func (s *Server) handleShareDirsGet(w http.ResponseWriter, r *http.Request) {
+	dirs, err := s.getClient(r).GetShareDirs(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(dirs)
+}
+
+func (s *Server) handleShareDirsSet(w http.ResponseWriter, r *http.Request) {
+	var dirs []domain.ShareDir
+	if err := json.NewDecoder(r.Body).Decode(&dirs); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := s.getClient(r).SetShares(r.Context(), dirs); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -45,11 +45,16 @@ templ ServerCards(servers []domain.Server) {
 			templ.KV("border-status-ok ring-1 ring-status-ok/20 bg-status-ok/[0.02]", s.Connected),
 			templ.KV("border-border hover:border-primary/50", !s.Connected) }>
 			
-			<!-- Connected Indicator (Top Right) -->
+			<!-- Status Indicator (Top Right) -->
 			if s.Connected {
 				<div class="absolute top-4 right-4 flex items-center gap-1.5 bg-status-ok text-white px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
 					<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
 					Aktiv
+				</div>
+			} else if s.Status == "Verbinde..." {
+				<div class="absolute top-4 right-4 flex items-center gap-1.5 bg-primary text-white px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+					<span class="w-1.5 h-1.5 rounded-full bg-white animate-spin"></span>
+					Verbinde...
 				</div>
 			}
 

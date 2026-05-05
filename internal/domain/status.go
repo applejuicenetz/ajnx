@@ -35,17 +35,3 @@ const (
 	UserOwnLimit       UserStatus = 15
 	UserServerRefused  UserStatus = 16
 )
-
-// OSType repräsentiert das Betriebssystem des Core-Hosts oder einer Quelle.
-type OSType int
-
-const (
-	OSUnknown   OSType = 0
-	OSWindows   OSType = 1
-	OSLinux     OSType = 2
-	OSMacintosh OSType = 3
-	OSSolaris   OSType = 4
-	OSOS2       OSType = 5
-	OSFreeBSD   OSType = 6
-	OSNetWare   OSType = 7
-)

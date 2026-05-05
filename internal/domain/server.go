@@ -10,4 +10,5 @@ type Server struct {
 	Port      int
 	LastSeen  time.Time
 	Connected bool
+	Status    string // "Verbunden", "Getrennt", "Verbinde..."
 }

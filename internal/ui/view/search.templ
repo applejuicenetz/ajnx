@@ -6,7 +6,7 @@ import (
 )
 
 // SearchPage rendert die Suchseite.
-templ SearchPage(activePage string, nickname string, searches []domain.Search) {
+templ SearchPage(activePage string, nickname string, searches []domain.Search, searchPages map[string]int) {
 	@Layout("Suche", activePage, nickname) {
 		<div class="space-y-8">
 			<!-- ─── Search Bar ─── -->
@@ -41,8 +41,14 @@ templ SearchPage(activePage string, nickname string, searches []domain.Search) {
 			</div>
 
 			<!-- ─── Active Searches & Results ─── -->
-			<div id="search-results-container" hx-get="/partials/search-results" hx-trigger="every 10s" hx-swap="innerHTML">
-				@SearchResults(searches)
+			<div 
+				id="search-results-container" 
+				hx-get="/partials/search-results" 
+				hx-trigger="every 10s" 
+				hx-swap="innerHTML"
+				hx-include="[name^='page_']"
+			>
+				@SearchResults(searches, searchPages)
 			</div>
 		</div>
 	}
@@ -57,7 +63,7 @@ func min5(a, b int) int {
 }
 
 // SearchResults rendert die Liste der aktiven Suchen und deren Ergebnisse.
-templ SearchResults(searches []domain.Search) {
+templ SearchResults(searches []domain.Search, searchPages map[string]int) {
 	if len(searches) == 0 {
 		<div class="flex flex-col items-center justify-center py-20 text-text-muted opacity-50">
 			<svg class="w-20 h-20 mb-4" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -84,7 +90,7 @@ templ SearchResults(searches []domain.Search) {
 								hx-post={ fmt.Sprintf("/search/%s/cancel", s.ID) }
 								hx-target="closest .bg-surface"
 								hx-swap="delete"
-								class="p-2 text-status-error hover:bg-status-error/10 rounded-lg transition-colors"
+								class="p-2 text-status-err hover:bg-status-err/10 rounded-lg transition-colors"
 								title="Suche abbrechen"
 							>
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -92,19 +98,38 @@ templ SearchResults(searches []domain.Search) {
 						</div>
 					</div>
 
+					{{
+						currentPage := 1
+						if val, ok := searchPages[s.ID]; ok {
+							currentPage = val
+						}
+						pageSize := 50
+						start := (currentPage - 1) * pageSize
+						end := start + pageSize
+						if end > len(s.Results) {
+							end = len(s.Results)
+						}
+						var displayResults []domain.SearchResult
+						if start < len(s.Results) {
+							displayResults = s.Results[start:end]
+						}
+						totalPages := (len(s.Results) + pageSize - 1) / pageSize
+						if totalPages == 0 { totalPages = 1 }
+					}}
 					<!-- Results Table -->
 					<div class="overflow-x-auto">
+						<input type="hidden" name={ fmt.Sprintf("page_%s", s.ID) } value={ fmt.Sprint(currentPage) } />
 						<table class="w-full text-left border-collapse">
 							<thead>
 								<tr class="bg-background/30 text-text-muted text-xs uppercase tracking-wider">
 									<th class="px-6 py-3 font-semibold">Dateiname</th>
-									<th class="px-6 py-3 font-semibold">Größe</th>
-									<th class="px-6 py-3 font-semibold">Quellen</th>
+									<th class="px-6 py-3 font-semibold text-xs whitespace-nowrap">Größe</th>
+									<th class="px-6 py-3 font-semibold text-xs">Quellen</th>
 									<th class="px-6 py-3 font-semibold text-right">Aktion</th>
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-border/50 text-sm">
-								for _, res := range s.Results {
+								for _, res := range displayResults {
 									<tr class="hover:bg-primary/5 transition-colors group">
 										<td class="px-6 py-4">
 											<div class="flex flex-col">
@@ -143,6 +168,51 @@ templ SearchResults(searches []domain.Search) {
 							</tbody>
 						</table>
 					</div>
+
+					<!-- Pagination Footer -->
+					if totalPages > 1 {
+						<div class="px-6 py-3 bg-background/20 border-t border-border flex items-center justify-between">
+							<span class="text-xs text-text-muted">
+								Seite { fmt.Sprint(currentPage) } von { fmt.Sprint(totalPages) } ({ fmt.Sprint(len(s.Results)) } Ergebnisse)
+							</span>
+							<div class="flex gap-1">
+								<button 
+									disabled?={ currentPage <= 1 }
+									hx-get={ fmt.Sprintf("/partials/search-results?page_%s=%d", s.ID, currentPage-1) }
+									hx-target="#search-results-container"
+									class="p-1.5 rounded-md border border-border hover:border-primary disabled:opacity-30 disabled:hover:border-border transition-colors"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+								</button>
+								
+								// Seitenzahlen (vereinfacht: max 5)
+								for p := 1; p <= totalPages; p++ {
+									if p == 1 || p == totalPages || (p >= currentPage-1 && p <= currentPage+1) {
+										<button 
+											hx-get={ fmt.Sprintf("/partials/search-results?page_%s=%d", s.ID, p) }
+											hx-target="#search-results-container"
+											class={ "px-2.5 py-1 rounded-md border text-xs font-bold transition-colors", 
+												templ.KV("bg-primary border-primary text-background", p == currentPage),
+												templ.KV("border-border hover:border-primary text-text-muted", p != currentPage) }
+										>
+											{ fmt.Sprint(p) }
+										</button>
+									} else if p == 2 || p == totalPages-1 {
+										<span class="text-text-muted px-1">...</span>
+									}
+								}
+
+								<button 
+									disabled?={ currentPage >= totalPages }
+									hx-get={ fmt.Sprintf("/partials/search-results?page_%s=%d", s.ID, currentPage+1) }
+									hx-target="#search-results-container"
+									class="p-1.5 rounded-md border border-border hover:border-primary disabled:opacity-30 disabled:hover:border-border transition-colors"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+								</button>
+							</div>
+						</div>
+					}
 				</div>
 			}
 		</div>

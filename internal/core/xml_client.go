@@ -5,11 +5,12 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -70,6 +71,33 @@ func md5hex(s string) string {
 
 // Information fragt Live-Stats vom Core ab.
 func (c *XMLCoreClient) Information(ctx context.Context) (*domain.Information, error) {
+	mod, err := c.fetchModified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c.mu.RLock()
+	static := c.staticInfo
+	c.mu.RUnlock()
+
+	return mapInformation(mod, static), nil
+}
+
+// FullUpdate holt alle wichtigen Daten in einem Request.
+func (c *XMLCoreClient) FullUpdate(ctx context.Context) (*domain.Information, []domain.Download, []domain.Upload, error) {
+	mod, err := c.fetchModified(ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	c.mu.RLock()
+	static := c.staticInfo
+	c.mu.RUnlock()
+
+	return mapInformation(mod, static), mapDownloads(mod), mapUploads(mod), nil
+}
+
+func (c *XMLCoreClient) fetchModified(ctx context.Context) (*XMLModified, error) {
 	resp, err := c.doRequest(ctx, "/xml/modified.xml?timestamp=0")
 	if err != nil {
 		return nil, err
@@ -80,16 +108,17 @@ func (c *XMLCoreClient) Information(ctx context.Context) (*domain.Information, e
 	if err := DecodeXML(resp.Body, &mod); err != nil {
 		return nil, err
 	}
+	return &mod, nil
+}
 
+func mapInformation(mod *XMLModified, staticInfo *XMLGeneralInformation) *domain.Information {
 	info := &domain.Information{}
-	c.mu.RLock()
-	if c.staticInfo != nil {
+	if staticInfo != nil {
 		info.Core = domain.CoreInfo{
-			Version: c.staticInfo.General.Version,
-			System:  parseOSType(c.staticInfo.General.System),
+			Version: staticInfo.General.Version,
+			OS:      parseOSType(staticInfo.General.System),
 		}
 	}
-	c.mu.RUnlock()
 
 	if mod.NetworkInfo != nil {
 		serverDisplay := mod.NetworkInfo.ConnectedWithServer
@@ -101,17 +130,17 @@ func (c *XMLCoreClient) Information(ctx context.Context) (*domain.Information, e
 		}
 
 		info.Network = domain.NetworkInfo{
-			Users:             mod.NetworkInfo.Users,
-			Files:             mod.NetworkInfo.Files,
-			Firewalled:        mod.NetworkInfo.Firewalled == "true",
-			IP:                mod.NetworkInfo.IP,
+			Users:               mod.NetworkInfo.Users,
+			Files:               mod.NetworkInfo.Files,
+			Firewalled:          mod.NetworkInfo.Firewalled == "true",
+			IP:                  mod.NetworkInfo.IP,
 			ConnectedWithServer: serverDisplay,
-			ConnectedSince:    time.Unix(mod.NetworkInfo.ConnectedSince/1000, 0),
+			ConnectedSince:      time.Unix(mod.NetworkInfo.ConnectedSince/1000, 0),
 		}
 		if mod.NetworkInfo.Filesize != "" {
-			var fs float64
-			fmt.Sscanf(mod.NetworkInfo.Filesize, "%f", &fs)
-			info.Network.FilesizeMb = int64(fs)
+			if fs, err := strconv.ParseFloat(mod.NetworkInfo.Filesize, 64); err == nil {
+				info.Network.FilesizeMb = int64(fs)
+			}
 		}
 	}
 
@@ -124,25 +153,24 @@ func (c *XMLCoreClient) Information(ctx context.Context) (*domain.Information, e
 			DownloadSpeedBps:   mod.Information.DownloadSpeed,
 			OpenConnections:    mod.Information.OpenConnections,
 			MaxUploadPositions: mod.Information.MaxUploadPositions,
+			ShareFiles:         mod.Information.ShareFiles,
+			ShareSize:          mod.Information.ShareSize,
 		}
 	}
 
-	return info, nil
+	return info
 }
 
 // Downloads fragt die Liste der aktuellen Downloads ab.
 func (c *XMLCoreClient) Downloads(ctx context.Context) ([]domain.Download, error) {
-	resp, err := c.doRequest(ctx, "/xml/modified.xml?timestamp=0")
+	mod, err := c.fetchModified(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	return mapDownloads(mod), nil
+}
 
-	var mod XMLModified
-	if err := DecodeXML(resp.Body, &mod); err != nil {
-		return nil, err
-	}
-
+func mapDownloads(mod *XMLModified) []domain.Download {
 	sourcesByDownload := make(map[string][]domain.Source)
 	for _, s := range mod.Users {
 		src := domain.Source{
@@ -190,22 +218,19 @@ func (c *XMLCoreClient) Downloads(ctx context.Context) ([]domain.Download, error
 		}
 	}
 
-	return downloads, nil
+	return downloads
 }
 
 // Servers fragt die Serverliste ab.
 func (c *XMLCoreClient) Servers(ctx context.Context) ([]domain.Server, error) {
-	resp, err := c.doRequest(ctx, "/xml/modified.xml?timestamp=0")
+	mod, err := c.fetchModified(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	return mapServers(mod), nil
+}
 
-	var mod XMLModified
-	if err := DecodeXML(resp.Body, &mod); err != nil {
-		return nil, err
-	}
-
+func mapServers(mod *XMLModified) []domain.Server {
 	servers := make([]domain.Server, len(mod.Servers))
 	for i, s := range mod.Servers {
 		servers[i] = domain.Server{
@@ -217,23 +242,19 @@ func (c *XMLCoreClient) Servers(ctx context.Context) ([]domain.Server, error) {
 			Connected: s.Connected == 1,
 		}
 	}
-
-	return servers, nil
+	return servers
 }
 
 // Uploads fragt die aktuelle Upload-Liste ab.
 func (c *XMLCoreClient) Uploads(ctx context.Context) ([]domain.Upload, error) {
-	resp, err := c.doRequest(ctx, "/xml/modified.xml?timestamp=0")
+	mod, err := c.fetchModified(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	return mapUploads(mod), nil
+}
 
-	var mod XMLModified
-	if err := DecodeXML(resp.Body, &mod); err != nil {
-		return nil, err
-	}
-
+func mapUploads(mod *XMLModified) []domain.Upload {
 	var uploads []domain.Upload
 	for _, u := range mod.Users {
 		// In appleJuice XML-API sind User mit DownloadID == "0" Uploads.
@@ -275,11 +296,11 @@ func (c *XMLCoreClient) Uploads(ctx context.Context) ([]domain.Upload, error) {
 		})
 	}
 
-	return uploads, nil
+	return uploads
 }
 
 func (c *XMLCoreClient) PauseDownload(ctx context.Context, ids ...string) error {
-	params := buildMultiIDParam("Id", ids)
+	params := buildMultiIDParam("id", ids)
 	resp, err := c.doRequest(ctx, fmt.Sprintf("/function/pausedownload?%s", params))
 	if err != nil {
 		return err
@@ -301,6 +322,25 @@ func (c *XMLCoreClient) ResumeDownload(ctx context.Context, ids ...string) error
 func (c *XMLCoreClient) CancelDownload(ctx context.Context, ids ...string) error {
 	params := buildMultiIDParam("id", ids)
 	resp, err := c.doRequest(ctx, fmt.Sprintf("/function/canceldownload?%s", params))
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	return nil
+}
+
+func (c *XMLCoreClient) SetPowerDownload(ctx context.Context, id string, powerDownload float64) error {
+	// Umrechnung: UI 1.0 -> Core 0, UI 2.0 -> Core 10
+	// Formel: CoreValue = (UIValue * 10) - 10
+	coreValue := int((powerDownload * 10) - 10)
+	if coreValue < -10 {
+		coreValue = -10
+	}
+	if coreValue > 1000 { // appleJuice Limit ist meist 100, aber wir erlauben etwas mehr
+		coreValue = 1000
+	}
+
+	resp, err := c.doRequest(ctx, fmt.Sprintf("/function/setpowerdownload?id=%s&powerdownload=%d", id, coreValue))
 	if err != nil {
 		return err
 	}
@@ -543,6 +583,13 @@ func (c *XMLCoreClient) SetShares(ctx context.Context, shares []domain.ShareDir)
 		v.Set(fmt.Sprintf("sharesub%d", idx), sub)
 	}
 
+	// Slots leeren falls wir weniger haben als vorher (bis zu 20 AJ-Standard)
+	for i := len(shares); i < 20; i++ {
+		idx := i + 1
+		v.Set(fmt.Sprintf("sharedirectory%d", idx), "")
+		v.Set(fmt.Sprintf("sharesub%d", idx), "False")
+	}
+
 	resp, err := c.doRequest(ctx, fmt.Sprintf("/function/setsettings?%s", v.Encode()))
 	if err != nil {
 		return err
@@ -550,6 +597,78 @@ func (c *XMLCoreClient) SetShares(ctx context.Context, shares []domain.ShareDir)
 	resp.Body.Close()
 	return nil
 }
+
+// Shares fragt die Liste der freigegebenen Dateien ab.
+func (c *XMLCoreClient) Shares(ctx context.Context) ([]domain.Share, error) {
+	resp, err := c.doRequest(ctx, "/xml/share.xml")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var list XMLShareList
+	if err := DecodeXML(resp.Body, &list); err != nil {
+		return nil, err
+	}
+
+	// Beide Listen kombinieren (direkt und geschachtelt)
+	rawShares := list.Shares
+	if len(list.Nested.Shares) > 0 {
+		rawShares = append(rawShares, list.Nested.Shares...)
+	}
+
+	shares := make([]domain.Share, len(rawShares))
+	for i, s := range rawShares {
+		hash := s.Hash
+		if hash == "" {
+			hash = s.AltHash
+		}
+
+		shares[i] = domain.Share{
+			ID:            s.ID,
+			Hash:          hash,
+			Size:          s.Size,
+			Filename:      s.Filename,
+			ShortFilename: s.ShortFilename,
+			Priority:      s.Priority,
+		}
+	}
+
+	return shares, nil
+}
+
+func (c *XMLCoreClient) GetShareDirs(ctx context.Context) ([]domain.ShareDir, error) {
+	resp, err := c.doRequest(ctx, "/xml/settings.xml")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var res struct {
+		XMLName xml.Name `xml:"applejuice"`
+		Share   struct {
+			Directories []struct {
+				Path string `xml:"name"`
+				Mode string `xml:"sharemode"`
+			} `xml:"directory"`
+		} `xml:"share"`
+	}
+
+	if err := DecodeXML(resp.Body, &res); err != nil {
+		return nil, err
+	}
+
+	var shares []domain.ShareDir
+	for _, d := range res.Share.Directories {
+		shares = append(shares, domain.ShareDir{
+			Path:           d.Path,
+			WithSubfolders: strings.ToLower(d.Mode) == "subdirectory",
+		})
+	}
+
+	return shares, nil
+}
+
 
 func (c *XMLCoreClient) doRequest(ctx context.Context, path string) (*http.Response, error) {
 	c.mu.RLock()
@@ -562,7 +681,6 @@ func (c *XMLCoreClient) doRequest(ctx context.Context, path string) (*http.Respo
 		sep = "&"
 	}
 	urlStr := fmt.Sprintf("%s%s%spassword=%s", baseURL, path, sep, password)
-	log.Printf("[CoreClient] %s (Password: %s...)", path, password[:4])
 
 	req, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
 	if err != nil {
@@ -616,7 +734,7 @@ func buildMultiIDParam(firstKey string, ids []string) string {
 		if i == 0 {
 			sb.WriteString(fmt.Sprintf("%s=%s", firstKey, id))
 		} else {
-			sb.WriteString(fmt.Sprintf("&id%d=%s", i, id))
+			sb.WriteString(fmt.Sprintf("&%s%d=%s", firstKey, i, id))
 		}
 	}
 	return sb.String()

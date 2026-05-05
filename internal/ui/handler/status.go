@@ -30,6 +30,7 @@ func (h *StatusHandler) fetchStatus(r *http.Request) (*domain.Information, int, 
 		return nil, http.StatusInternalServerError, err.Error()
 	}
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := gatewayClient.Do(req)
 	if err != nil {
@@ -84,6 +85,7 @@ func (h *StatusHandler) ServeShutdown(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := gatewayClient.Do(req)
 	if err != nil || resp.StatusCode >= 400 {

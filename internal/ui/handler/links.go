@@ -66,6 +66,7 @@ func (h *LinksHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := linksGatewayClient.Do(req)
 	if err != nil {

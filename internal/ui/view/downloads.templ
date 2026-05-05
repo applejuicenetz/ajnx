@@ -32,11 +32,11 @@ templ DownloadsPage(downloads []domain.Download, nickname string) {
 							<th class="px-4 py-3 text-left w-10">
 								<input type="checkbox" class="rounded border-border bg-background"/>
 							</th>
-							<th class="px-4 py-3 text-left">Dateiname / Quellen</th>
-							<th class="px-4 py-3 text-left w-24">Größe</th>
+							<th class="px-4 py-3 text-left">Datei / Info</th>
 							<th class="px-4 py-3 text-left w-32">Status</th>
 							<th class="px-4 py-3 text-left w-36">Fortschritt</th>
 							<th class="px-4 py-3 text-left w-24">Speed</th>
+							<th class="px-4 py-3 text-left w-16">PDL</th>
 							<th class="px-4 py-3 text-left w-20">ETA</th>
 							<th class="px-4 py-3 text-right w-24">Aktionen</th>
 						</tr>
@@ -74,27 +74,23 @@ templ DownloadRows(downloads []domain.Download) {
 				<input type="checkbox" class="rounded border-border bg-background"/>
 			</td>
 			<!-- Dateiname -->
-			<td class="px-4 py-4 align-middle max-w-xs">
-				<span class="truncate block font-medium" title={ d.Filename }>
-					{ d.Filename }
-					if part := formatPart(d.Filename); part != "" {
-						<span class="text-primary ml-1">{ part }</span>
-					}
-				</span>
-				<div class="flex items-center gap-2 mt-1">
-					<span class="text-[10px] text-text-muted bg-surface px-1.5 py-0.5 rounded border border-border">
+			<td class="px-4 py-4 align-middle max-w-sm">
+				<span class="truncate block font-medium" title={ d.Filename }>{ d.Filename }</span>
+				<div class="flex items-center gap-1.5 mt-1 text-[10px] text-text-muted">
+					<span class="bg-surface px-1.5 py-0.5 rounded border border-border">
 						Quellen: { fmt.Sprintf("%d/%d", countActiveSources(d.Sources), len(d.Sources)) }
 					</span>
+					<span class="mx-0.5 opacity-30">|</span>
+					<span>{ formatSize(d.Size) }</span>
+					if part := formatPart(d.Filename); part != "" {
+						<span class="mx-0.5 opacity-30">|</span>
+						<span class="text-primary font-bold">{ strings.TrimPrefix(part, "| ") }</span>
+					}
 					if pos := getBestQueuePosition(d.Sources); pos > 0 {
-						<span class="text-[10px] text-status-warn bg-status-warn/5 px-1.5 py-0.5 rounded border border-status-warn/20">
-							Warteschlange: { fmt.Sprint(pos) }
-						</span>
+						<span class="mx-0.5 opacity-30">|</span>
+						<span class="text-status-warn font-bold">Queue: { fmt.Sprint(pos) }</span>
 					}
 				</div>
-			</td>
-			<!-- Größe -->
-			<td class="px-4 py-4 align-middle text-text-muted whitespace-nowrap">
-				{ formatSize(d.Size) }
 			</td>
 			<!-- Status -->
 			<td class={ "px-4 py-4 align-middle whitespace-nowrap font-medium " + dlStatusClass(d) }>
@@ -114,6 +110,28 @@ templ DownloadRows(downloads []domain.Download) {
 			<td class="px-4 py-4 align-middle text-text-muted whitespace-nowrap">
 				{ formatSpeed(d.SpeedBps) }
 			</td>
+			<!-- PDL -->
+			<td class="px-4 py-4 align-middle">
+				<div class="flex items-center justify-center gap-2">
+					<button 
+						hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/pdl-dec")) } 
+						hx-swap="none"
+						class="p-1 text-text-muted hover:text-primary transition-colors border border-border rounded hover:border-primary/30"
+					>
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+					</button>
+					<span class="font-mono font-bold text-primary w-8 text-center">
+						{ fmt.Sprintf("%.1f", (d.PowerDownload)) }
+					</span>
+					<button 
+						hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/pdl-inc")) } 
+						hx-swap="none"
+						class="p-1 text-text-muted hover:text-primary transition-colors border border-border rounded hover:border-primary/30"
+					>
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+					</button>
+				</div>
+			</td>
 			<!-- ETA -->
 			<td class="px-4 py-4 align-middle text-text-muted whitespace-nowrap">
 				{ formatETA(d.EtaSeconds) }
@@ -122,26 +140,33 @@ templ DownloadRows(downloads []domain.Download) {
 			<td class="px-4 py-4 align-middle">
 				<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 					if d.Status == domain.DownloadPaused {
-						<!-- Resume -->
-						<form hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/resume")) } hx-swap="none">
-							<button type="submit" class="p-1.5 text-text-muted hover:text-primary transition-colors rounded" title="Fortsetzen">
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-							</button>
-						</form>
-					} else {
-						<!-- Pause -->
-						<form hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/pause")) } hx-swap="none">
-							<button type="submit" class="p-1.5 text-text-muted hover:text-primary transition-colors rounded" title="Pausieren">
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-							</button>
-						</form>
-					}
-					<!-- Cancel -->
-					<form hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/cancel")) } hx-swap="none" hx-confirm="Download wirklich abbrechen?">
-						<button type="submit" class="p-1.5 text-text-muted hover:text-status-err transition-colors rounded" title="Abbrechen">
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+						<button 
+							hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/resume")) } 
+							hx-swap="none"
+							class="p-1.5 text-text-muted hover:text-primary transition-colors rounded" 
+							title="Fortsetzen"
+						>
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
 						</button>
-					</form>
+					} else {
+						<button 
+							hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/pause")) } 
+							hx-swap="none"
+							class="p-1.5 text-text-muted hover:text-primary transition-colors rounded" 
+							title="Pausieren"
+						>
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+						</button>
+					}
+					<button 
+						hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/cancel")) } 
+						hx-swap="none" 
+						hx-confirm="Download wirklich abbrechen?"
+						class="p-1.5 text-text-muted hover:text-status-err transition-colors rounded" 
+						title="Abbrechen"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+					</button>
 				</div>
 			</td>
 		</tr>
@@ -160,26 +185,45 @@ templ DownloadCards(downloads []domain.Download) {
 		<div class="bg-surface rounded-lg p-4 border border-border">
 			<!-- Header: Titel + Menü -->
 			<div class="flex items-start justify-between gap-2 mb-3">
-				<p class="font-medium text-sm leading-tight break-all">{ d.Filename }</p>
+				<div>
+					<p class="font-medium text-sm leading-tight break-all">{ d.Filename }</p>
+					<div class="flex items-center gap-1.5 mt-1 text-[10px] text-text-muted">
+						<span>{ formatSize(d.Size) }</span>
+						if part := formatPart(d.Filename); part != "" {
+							<span class="mx-0.5 opacity-30">|</span>
+							<span class="text-primary font-bold">{ strings.TrimPrefix(part, "| ") }</span>
+						}
+					</div>
+				</div>
 				<div class="flex gap-1 shrink-0">
 					if d.Status == domain.DownloadPaused {
-						<form hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/resume")) } hx-swap="none">
-							<button type="submit" class="p-1.5 text-text-muted hover:text-primary transition-colors" title="Fortsetzen">
-								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-							</button>
-						</form>
-					} else {
-						<form hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/pause")) } hx-swap="none">
-							<button type="submit" class="p-1.5 text-text-muted hover:text-primary transition-colors" title="Pausieren">
-								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-							</button>
-						</form>
-					}
-					<form hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/cancel")) } hx-swap="none" hx-confirm="Download wirklich abbrechen?">
-						<button type="submit" class="p-1.5 text-text-muted hover:text-status-err transition-colors" title="Abbrechen">
-							<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+						<button 
+							hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/resume")) } 
+							hx-swap="none"
+							class="p-1.5 text-text-muted hover:text-primary transition-colors" 
+							title="Fortsetzen"
+						>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
 						</button>
-					</form>
+					} else {
+						<button 
+							hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/pause")) } 
+							hx-swap="none"
+							class="p-1.5 text-text-muted hover:text-primary transition-colors" 
+							title="Pausieren"
+						>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+						</button>
+					}
+					<button 
+						hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/cancel")) } 
+						hx-swap="none" 
+						hx-confirm="Download wirklich abbrechen?"
+						class="p-1.5 text-text-muted hover:text-status-err transition-colors" 
+						title="Abbrechen"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+					</button>
 				</div>
 			</div>
 			<!-- Progress Bar -->
@@ -190,11 +234,34 @@ templ DownloadCards(downloads []domain.Download) {
 				></div>
 			</div>
 			<!-- Metriken -->
-			<div class="flex items-center justify-between text-xs text-text-muted">
-				<span class={ "font-medium " + dlStatusClass(d) }>{ dlStatusLabel(d) }</span>
-				<span>{ formatSize(d.Size) }</span>
-				<span>{ formatSpeed(d.SpeedBps) }</span>
-				<span>ETA: { formatETA(d.EtaSeconds) }</span>
+			<div class="grid grid-cols-2 gap-2 text-[10px] text-text-muted uppercase tracking-wider">
+				<div class="flex flex-col gap-1">
+					<span class={ "font-bold " + dlStatusClass(d) }>{ dlStatusLabel(d) }</span>
+					<span>Quellen: { fmt.Sprintf("%d/%d", countActiveSources(d.Sources), len(d.Sources)) }</span>
+				</div>
+				<div class="flex flex-col gap-1 text-right">
+					<span class="text-status-ok font-bold">{ formatSpeed(d.SpeedBps) }</span>
+					<div class="flex items-center justify-end gap-1.5">
+						<span>PDL:</span>
+						<button 
+							hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/pdl-dec")) } 
+							hx-swap="none"
+							class="p-1 text-text-muted border border-border rounded"
+						>
+							<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+						</button>
+						<span class="text-primary font-bold min-w-[20px]">{ fmt.Sprintf("%.1f", d.PowerDownload) }</span>
+						<button 
+							hx-post={ string(templ.SafeURL("/downloads/" + d.ID + "/pdl-inc")) } 
+							hx-swap="none"
+							class="p-1 text-text-muted border border-border rounded"
+						>
+							<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+						</button>
+						<span class="mx-0.5 opacity-30">|</span>
+						<span>ETA: { formatETA(d.EtaSeconds) }</span>
+					</div>
+				</div>
 			</div>
 		</div>
 	}

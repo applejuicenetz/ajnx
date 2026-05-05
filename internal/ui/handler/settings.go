@@ -41,7 +41,6 @@ func (h *SettingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	coreSettings, err := h.fetchCoreSettings(r)
 	if err != nil {
 		// Wenn der Core nicht erreichbar ist, zeigen wir eine Warnung
-		fmt.Printf("[UI] Fehler beim Laden der Core-Settings: %v\n", err)
 	}
 
 	view.SettingsPage("settings", h.nickname, lock, coreSettings).Render(r.Context(), w)
@@ -54,6 +53,7 @@ func (h *SettingsHandler) fetchCoreSettings(r *http.Request) (core.XMLSettings, 
 		return core.XMLSettings{}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+h.token)
+	addNativeHeader(r, req)
 
 	resp, err := gatewayClient.Do(req)
 	if err != nil {
@@ -111,6 +111,7 @@ func (h *SettingsHandler) HandleCoreSettingsUpdate(w http.ResponseWriter, r *htt
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+h.token)
+	addNativeHeader(r, req)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := gatewayClient.Do(req)

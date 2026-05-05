@@ -110,7 +110,7 @@ templ SettingsPage(activePage string, nickname string, lock setup.Lock, coreSett
 				</div>
 				<div class="p-6 space-y-4">
 					<p class="text-sm text-text-muted leading-relaxed">
-						Registriere AJNX als Standard-Programm für appleJuice-Links (<code class="bg-background px-1.5 py-0.5 rounded text-primary">ajfsp://</code>). 
+						Registriere aJnX als Standard-Programm für appleJuice-Links (<code class="bg-background px-1.5 py-0.5 rounded text-primary">ajfsp://</code>). 
 						Dies ermöglicht das Hinzufügen von Downloads mit einem Klick direkt aus deinem Browser.
 					</p>
 					<div class="flex items-center gap-4">
@@ -127,7 +127,7 @@ templ SettingsPage(activePage string, nickname string, lock setup.Lock, coreSett
 							if ('registerProtocolHandler' in navigator) {
 								const url = window.location.origin + '/links?link=%s';
 								try {
-									navigator.registerProtocolHandler("web+ajfsp", url, "AJNX Link Handler");
+									navigator.registerProtocolHandler("web+ajfsp", url, "aJnX Link Handler");
 									showToast('Registrierungs-Anfrage gesendet. Bitte bestätige den Browser-Dialog.', 'success');
 								} catch (e) {
 									showToast('Fehler bei der Registrierung: ' + e.message, 'error');

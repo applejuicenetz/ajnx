@@ -30,7 +30,6 @@ func NewSearchHandler(gatewayURL, gatewayToken, nickname string) *SearchHandler 
 }
 
 func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("[UI] SearchHandler: %s %s\n", r.Method, r.URL.Path)
 	if r.Method == http.MethodPost {
 		if strings.HasSuffix(r.URL.Path, "/cancel") {
 			h.HandleCancel(w, r)
@@ -46,7 +45,19 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.SearchPage("search", h.nickname, searches).Render(r.Context(), w)
+	// Page-Parameter sammeln
+	pages := make(map[string]int)
+	for k, v := range r.URL.Query() {
+		if strings.HasPrefix(k, "page_") && len(v) > 0 {
+			var p int
+			fmt.Sscanf(v[0], "%d", &p)
+			if p > 0 {
+				pages[k[5:]] = p
+			}
+		}
+	}
+
+	view.SearchPage("search", h.nickname, searches, pages).Render(r.Context(), w)
 }
 
 func (h *SearchHandler) ServeResults(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +67,23 @@ func (h *SearchHandler) ServeResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.SearchResults(searches).Render(r.Context(), w)
+	// Page-Parameter sammeln
+	pages := make(map[string]int)
+	for k, v := range r.URL.Query() {
+		if strings.HasPrefix(k, "page_") && len(v) > 0 {
+			var p int
+			fmt.Sscanf(v[0], "%d", &p)
+			if p > 0 {
+				pages[k[5:]] = p
+			}
+		}
+	}
+
+	view.SearchResults(searches, pages).Render(r.Context(), w)
 }
 
 func (h *SearchHandler) HandleStart(w http.ResponseWriter, r *http.Request) {
 	query := r.FormValue("query")
-	fmt.Printf("[UI] Starte Suche nach: %q\n", query)
 	if query == "" {
 		http.Error(w, "Query is required", http.StatusBadRequest)
 		return
@@ -73,10 +95,10 @@ func (h *SearchHandler) HandleStart(w http.ResponseWriter, r *http.Request) {
 	req, _ := http.NewRequestWithContext(r.Context(), "POST", h.gatewayURL+"/api/search", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := searchGatewayClient.Do(req)
 	if err != nil {
-		fmt.Printf("[UI] Gateway-Request-Fehler: %v\n", err)
 		http.Error(w, "Gateway nicht erreichbar", http.StatusServiceUnavailable)
 		return
 	}
@@ -84,12 +106,10 @@ func (h *SearchHandler) HandleStart(w http.ResponseWriter, r *http.Request) {
 
 	if resp.StatusCode != http.StatusAccepted {
 		body, _ := io.ReadAll(resp.Body)
-		fmt.Printf("[UI] Gateway verweigerte Suche: Status %d, Body: %s\n", resp.StatusCode, string(body))
 		http.Error(w, fmt.Sprintf("Gateway Fehler: %s", string(body)), resp.StatusCode)
 		return
 	}
 
-	fmt.Println("[UI] Suche erfolgreich gestartet. Poller wird Ergebnisse laden.")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("<div class='p-4 bg-primary/10 text-primary rounded-xl mb-4 animate-pulse'>Suche wurde gestartet, Ergebnisse werden geladen...</div>"))
 }
@@ -105,6 +125,7 @@ func (h *SearchHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 
 	req, _ := http.NewRequestWithContext(r.Context(), "POST", h.gatewayURL+"/api/search/"+id+"/cancel", nil)
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := searchGatewayClient.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
@@ -118,23 +139,20 @@ func (h *SearchHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 func (h *SearchHandler) fetchSearches(r *http.Request) ([]domain.Search, error) {
 	req, _ := http.NewRequestWithContext(r.Context(), "GET", h.gatewayURL+"/api/search", nil)
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := searchGatewayClient.Do(req)
 	if err != nil {
-		fmt.Printf("[UI] fetchSearches: Gateway-Fehler: %v\n", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		fmt.Printf("[UI] fetchSearches: Gateway antwortete mit %d: %s\n", resp.StatusCode, string(body))
 		return nil, fmt.Errorf("gateway returned status %d", resp.StatusCode)
 	}
 
 	var searches []domain.Search
 	if err := json.NewDecoder(resp.Body).Decode(&searches); err != nil {
-		fmt.Printf("[UI] fetchSearches: JSON-Fehler: %v\n", err)
 		return nil, err
 	}
 	return searches, nil

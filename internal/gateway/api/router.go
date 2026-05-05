@@ -18,6 +18,7 @@ type Server struct {
 	state         *gateway.State
 	sm            *auth.SessionManager
 	client        core.CoreClient
+	nativeClient  core.CoreClient
 	internalToken string
 	sessionSecret string
 }
@@ -25,12 +26,13 @@ type Server struct {
 // NewServer erstellt einen neuen API-Server.
 // internalToken: Service-Token für UI-Server → Gateway Kommunikation.
 // sessionSecret: JWT-Signier-Secret aus setup.lock (leer = Setup nicht abgeschlossen).
-func NewServer(state *gateway.State, sm *auth.SessionManager, client core.CoreClient, internalToken, sessionSecret string) *Server {
+func NewServer(state *gateway.State, sm *auth.SessionManager, client core.CoreClient, native core.CoreClient, internalToken, sessionSecret string) *Server {
 	s := &Server{
 		router:        chi.NewRouter(),
 		state:         state,
 		sm:            sm,
 		client:        client,
+		nativeClient:  native,
 		internalToken: internalToken,
 		sessionSecret: sessionSecret,
 	}
@@ -66,6 +68,7 @@ func (s *Server) setupRoutes() {
 		r.Post("/api/downloads/{id}/pause", s.handleDownloadPause)
 		r.Post("/api/downloads/{id}/resume", s.handleDownloadResume)
 		r.Post("/api/downloads/{id}/cancel", s.handleDownloadCancel)
+		r.Post("/api/downloads/{id}/pdl", s.handleDownloadPDL)
 		r.Post("/api/downloads/clean", s.handleCleanDownloads)
 		r.Get("/api/servers", s.handleServers)
 		r.Post("/api/servers/{id}/connect", s.handleServerConnect)
@@ -78,6 +81,10 @@ func (s *Server) setupRoutes() {
 		r.Post("/api/search/{id}/cancel", s.handleSearchCancel)
 		r.Get("/api/settings", s.handleSettingsGet)
 		r.Post("/api/settings", s.handleSettingsUpdate)
+
+		r.Get("/api/shares", s.handleShares)
+		r.Get("/api/shares/dirs", s.handleShareDirsGet)
+		r.Post("/api/shares/dirs", s.handleShareDirsSet)
 	})
 }
 
@@ -118,4 +125,16 @@ func loginRateLimiter() func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// getClient entscheidet basierend auf dem Header X-AJNX-Native, welcher Core genutzt wird.
+func (s *Server) getClient(r *http.Request) core.CoreClient {
+	if s.isNative(r) {
+		return s.nativeClient
+	}
+	return s.client
+}
+
+func (s *Server) isNative(r *http.Request) bool {
+	return s.nativeClient != nil && r.Header.Get("X-AJNX-Native") == "true"
 }

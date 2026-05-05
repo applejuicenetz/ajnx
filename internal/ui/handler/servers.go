@@ -87,6 +87,7 @@ func (h *ServersHandler) serveAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := serversGatewayClient.Do(req)
 	if err != nil || resp.StatusCode >= 400 {
@@ -112,6 +113,7 @@ func (h *ServersHandler) handleDisconnect(w http.ResponseWriter, r *http.Request
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := serversGatewayClient.Do(req)
 	if err != nil || resp.StatusCode >= 400 {
@@ -135,6 +137,7 @@ func (h *ServersHandler) fetchServers(r *http.Request) ([]domain.Server, error) 
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := serversGatewayClient.Do(req)
 	if err != nil {

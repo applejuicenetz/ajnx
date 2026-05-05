@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/applejuicenetz/ajnx/internal/core"
+	"github.com/applejuicenetz/ajnx/internal/domain"
 	"github.com/applejuicenetz/ajnx/internal/gateway"
 	"github.com/applejuicenetz/ajnx/internal/setup"
 )
@@ -17,7 +18,8 @@ type Poller struct {
 	client     core.CoreClient
 	state      *gateway.State
 	setupMgr   *setup.Manager
-	lastConfig string // "host:port:password" zur Erkennung von Änderungen
+	lastConfig string             // "host:port:password" zur Erkennung von Änderungen
+	verInfo    domain.VersionInfo // Cache für die Versions-Info
 }
 
 // NewPoller erstellt einen neuen Poller.
@@ -38,8 +40,12 @@ func (p *Poller) Run(ctx context.Context) {
 		log.Printf("poller: initiale Session konnte nicht geholt werden (noch kein Setup?): %v", err)
 	}
 
+	// Initialer Check für Updates
+	p.updateVersion(ctx)
+
 	go p.pollLoop(ctx, 5*time.Second, p.updateAll)
-	go p.pollLoop(ctx, 15*time.Second, p.updateServers)
+	go p.pollLoop(ctx, 30*time.Second, p.updateServers)
+	go p.pollLoop(ctx, 1*time.Hour, p.updateVersion)
 }
 
 func (p *Poller) checkConfigReload() {
@@ -64,16 +70,41 @@ func (p *Poller) checkConfigReload() {
 
 func (p *Poller) updateAll(ctx context.Context) error {
 	p.checkConfigReload()
-	// Information() und Downloads() rufen beide modified.xml?timestamp=0 auf.
-	// Wir können das optimieren, indem wir eine Methode nutzen die beides liefert.
-	// Für den Moment nutzen wir nacheinander, aber im selben Loop um Parallelität zu vermeiden.
-	if err := p.updateInformation(ctx); err != nil {
+	
+	info, downloads, uploads, err := p.client.FullUpdate(ctx)
+	if err != nil {
+		p.state.UpdateError(err)
 		return err
 	}
-	if err := p.updateDownloads(ctx); err != nil {
-		return err
+
+	info.Version = p.verInfo
+
+	// Aktive Transfers zählen
+	activeDL := 0
+	for _, d := range downloads {
+		if d.SpeedBps > 0 {
+			activeDL++
+		}
 	}
-	return p.updateUploads(ctx)
+	activeUL := 0
+	for _, u := range uploads {
+		if u.Status == domain.UploadTransferring {
+			activeUL++
+		}
+	}
+	info.Session.ActiveDownloads = activeDL
+	info.Session.ActiveUploads = activeUL
+
+	p.state.UpdateInformation(info)
+	p.state.UpdateDownloads(downloads)
+	p.state.UpdateUploads(uploads)
+	p.state.UpdateError(nil)
+	return nil
+}
+
+func (p *Poller) updateVersion(ctx context.Context) error {
+	p.verInfo = checkUpdate(domain.Version)
+	return nil
 }
 
 func (p *Poller) pollLoop(ctx context.Context, interval time.Duration, task func(context.Context) error) {
@@ -100,39 +131,11 @@ func (p *Poller) pollLoop(ctx context.Context, interval time.Duration, task func
 	}
 }
 
-func (p *Poller) updateInformation(ctx context.Context) error {
-	info, err := p.client.Information(ctx)
-	if err != nil {
-		p.state.UpdateError(err)
-		return err
-	}
-	p.state.UpdateInformation(info)
-	p.state.UpdateError(nil)
-	return nil
-}
-
-func (p *Poller) updateDownloads(ctx context.Context) error {
-	downloads, err := p.client.Downloads(ctx)
-	if err != nil {
-		return err
-	}
-	p.state.UpdateDownloads(downloads)
-	return nil
-}
-
 func (p *Poller) updateServers(ctx context.Context) error {
 	servers, err := p.client.Servers(ctx)
 	if err != nil {
 		return err
 	}
 	p.state.UpdateServers(servers)
-	return nil
-}
-func (p *Poller) updateUploads(ctx context.Context) error {
-	uploads, err := p.client.Uploads(ctx)
-	if err != nil {
-		return err
-	}
-	p.state.UpdateUploads(uploads)
 	return nil
 }

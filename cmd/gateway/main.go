@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,6 +11,7 @@ import (
 	"time"
 
 	"github.com/applejuicenetz/ajnx/internal/core"
+	"github.com/applejuicenetz/ajnx/internal/core/native"
 	"github.com/applejuicenetz/ajnx/internal/gateway"
 	"github.com/applejuicenetz/ajnx/internal/gateway/api"
 	"github.com/applejuicenetz/ajnx/internal/gateway/auth"
@@ -41,7 +40,6 @@ func main() {
 		corePort = fmt.Sprintf("%d", snap.CorePort)
 		corePassword = snap.CorePassword
 		sessionSecret = snap.SessionSecret
-		log.Printf("Konfiguration aus setup.lock geladen (Core: %s:%s)", coreHost, corePort)
 	}
 
 	// Core Client initialisieren
@@ -52,6 +50,9 @@ func main() {
 	} else {
 		client = core.NewXMLCoreClient(coreURL, corePassword)
 	}
+
+	// Native Core (Secret)
+	nativeClient := native.NewNativeCore()
 
 	// Plugin System
 	bus := plugin.NewBus()
@@ -84,7 +85,7 @@ func main() {
 	}
 
 	// API Server
-	server := api.NewServer(state, sm, client, internalToken, sessionSecret)
+	server := api.NewServer(state, sm, client, nativeClient, internalToken, sessionSecret)
 	
 	httpServer := &http.Server{
 		Addr:    ":" + port,
@@ -113,9 +114,4 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
-}
-
-func md5prefix(s string) string {
-	h := md5.Sum([]byte(s))
-	return hex.EncodeToString(h[:])[:8]
 }

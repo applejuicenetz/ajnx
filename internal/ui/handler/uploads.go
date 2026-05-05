@@ -71,6 +71,7 @@ func (h *UploadsHandler) fetchUploads(r *http.Request) ([]domain.Upload, error) 
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+h.gatewayToken)
+	addNativeHeader(r, req)
 
 	resp, err := uploadsGatewayClient.Do(req)
 	if err != nil {
