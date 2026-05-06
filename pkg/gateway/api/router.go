@@ -63,7 +63,7 @@ func (s *Server) setupRoutes() {
 
 	// Geschützte Endpunkte
 	s.router.Group(func(r chi.Router) {
-		r.Use(auth.AuthMiddleware(s.sm, s.internalToken))
+		r.Use(auth.AuthMiddleware(s.sm, s.setupMgr, s.internalToken))
 
 		r.Get("/api/status", s.handleStatus)
 		r.Get("/api/downloads", s.handleDownloads)

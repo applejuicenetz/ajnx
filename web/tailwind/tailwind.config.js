@@ -1,6 +1,8 @@
 module.exports = {
   content: [
-    "../../internal/ui/view/**/*.templ",
+    "../../pkg/**/*.templ",
+    "../../pkg/**/*.go",
+    "../../web/static/**/*.html",
   ],
   theme: {
     extend: {

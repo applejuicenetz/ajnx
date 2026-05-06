@@ -15,18 +15,16 @@ const sessionCookieName = "ajnx_session"
 func signToken(value, secret string) string {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(value))
-	sig := hex.EncodeToString(mac.Sum(nil))
-	return value + "." + sig
+	return value + "." + hex.EncodeToString(mac.Sum(nil))
 }
 
 func verifyToken(signed, secret string) (string, bool) {
-	idx := strings.LastIndex(signed, ".")
-	if idx < 0 {
+	parts := strings.Split(signed, ".")
+	if len(parts) != 2 {
 		return "", false
 	}
-	value := signed[:idx]
-	expected := signToken(value, secret)
-	if !hmac.Equal([]byte(signed), []byte(expected)) {
+	value := parts[0]
+	if signToken(value, secret) != signed {
 		return "", false
 	}
 	return value, true

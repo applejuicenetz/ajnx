@@ -22,15 +22,6 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		info = s.state.GetInformation()
 	}
 
-	if info == nil {
-		errStr := s.state.GetLastError()
-		if errStr == "" {
-			errStr = "Status not yet available"
-		}
-		http.Error(w, errStr, http.StatusServiceUnavailable)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(info)
 }
@@ -42,7 +33,7 @@ func (s *Server) handleDownloads(w http.ResponseWriter, r *http.Request) {
 	} else {
 		downloads = s.state.GetDownloads()
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(downloads)
 }
@@ -54,7 +45,7 @@ func (s *Server) handleUploads(w http.ResponseWriter, r *http.Request) {
 	} else {
 		uploads = s.state.GetUploads()
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(uploads)
 }
@@ -66,7 +57,7 @@ func (s *Server) handleServers(w http.ResponseWriter, r *http.Request) {
 	} else {
 		servers = s.state.GetServers()
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(servers)
 }

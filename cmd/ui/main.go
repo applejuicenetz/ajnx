@@ -65,6 +65,7 @@ func main() {
 	mux.Handle("/setup/", setupHandler)
 
 	mux.Handle("/login", loginHandler)
+	mux.HandleFunc("/logout", loginHandler.Logout)
 
 	// Downloads-Routen
 	mux.Handle("/downloads", downloadsHandler)

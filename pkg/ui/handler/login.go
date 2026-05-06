@@ -65,7 +65,9 @@ func (h *LoginHandler) checkCoreStatus(r *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("Interner Fehler beim Status-Check.")
 	}
-	req.Header.Set("Authorization", "Bearer "+h.token)
+	
+	snap := h.setupMgr.Snapshot()
+	req.Header.Set("Authorization", "Bearer "+snap.SessionSecret)
 
 	resp, err := gatewayClient.Do(req)
 	if err != nil {
@@ -80,4 +82,16 @@ func (h *LoginHandler) checkCoreStatus(r *http.Request) error {
 		return fmt.Errorf("Core-Verbindung fehlgeschlagen (Status %d) – bitte Konfiguration prüfen.", resp.StatusCode)
 	}
 	return nil
+}
+
+// Logout löscht das Session-Cookie und leitet zum Login weiter.
+func (h *LoginHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+	http.Redirect(w, r, "/login", http.StatusFound)
 }
