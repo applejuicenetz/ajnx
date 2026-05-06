@@ -1,0 +1,223 @@
+package view
+
+import (
+	"fmt"
+	"github.com/applejuicenetz/ajnx/pkg/setup"
+	"github.com/applejuicenetz/ajnx/pkg/core"
+	"encoding/json"
+)
+
+templ SettingsPage(activePage string, nickname string, lock setup.Lock, coreSettings core.XMLSettings) {
+	@Layout("Einstellungen", activePage, nickname) {
+		<div class="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+			<div>
+				<h2 class="text-3xl font-bold mb-2">Einstellungen</h2>
+				<p class="text-text-muted">Konfiguriere dein aJnX Gateway und verwalte Erweiterungen.</p>
+			</div>
+
+			<!-- Core Settings Section -->
+			<div class="card-bg border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+				<div class="px-6 py-4 bg-white/5 border-b border-white/5 flex items-center gap-3">
+					<svg class="w-6 h-6 text-lime-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+					<h3 class="text-xl font-bold">Core Konfiguration</h3>
+				</div>
+				
+				<form hx-post="/settings/core" hx-swap="none" hx-on::after-request="if(event.detail.successful) { showToast('Einstellungen erfolgreich gespeichert!', 'success'); } else { showToast('Fehler: ' + event.detail.xhr.responseText, 'error'); }">
+					<input type="hidden" name="port" value={ fmt.Sprintf("%d", coreSettings.Port) } />
+					<input type="hidden" name="xml_port" value={ fmt.Sprintf("%d", coreSettings.XMLPort) } />
+					<div class="p-6 space-y-8">
+						<!-- Identität -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<div class="space-y-2">
+								<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Nickname</label>
+								<input type="text" name="nickname" value={ coreSettings.Nick } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none transition-all text-sm" />
+							</div>
+							<div class="space-y-2">
+								<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Core Host (Read-only)</label>
+								<input type="text" value={ lock.CoreHost } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 opacity-30 cursor-not-allowed text-sm" disabled />
+							</div>
+						</div>
+
+						<!-- Bandbreite & Limits -->
+						<div class="pt-6 border-t border-white/5">
+							<h4 class="text-xs font-bold text-lime-400 mb-6 uppercase tracking-widest">Bandbreite & Limits</h4>
+							<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+								<div class="space-y-2">
+									<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Max. Upload (KB/s)</label>
+									<input type="number" name="max_upload" value={ fmt.Sprintf("%d", coreSettings.MaxUpload/1024) } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none text-sm" />
+								</div>
+								<div class="space-y-2">
+									<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Max. Download (KB/s)</label>
+									<input type="number" name="max_download" value={ fmt.Sprintf("%d", coreSettings.MaxDownload/1024) } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none text-sm" />
+								</div>
+								<div class="space-y-2">
+									<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Speed pro Slot (KB/s)</label>
+									<input type="number" name="speed_per_slot" value={ fmt.Sprintf("%d", coreSettings.SpeedPerSlot/1024) } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none text-sm" />
+								</div>
+							</div>
+						</div>
+
+						<!-- Verbindungen -->
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+							<div class="space-y-2">
+								<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Max. Verbindungen</label>
+								<input type="number" name="max_connections" value={ fmt.Sprintf("%d", coreSettings.MaxConnections) } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none text-sm" />
+							</div>
+							<div class="space-y-2">
+								<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Quellen pro Datei</label>
+								<input type="number" name="max_sources_per_file" value={ fmt.Sprintf("%d", coreSettings.MaxSourcesPerFile) } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none text-sm" />
+							</div>
+							<div class="space-y-2">
+								<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Auto-Connect</label>
+								<select name="auto_connect" class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none appearance-none text-sm">
+									<option value="True" if coreSettings.AutoConnect == "True" { selected }>Aktiviert</option>
+									<option value="False" if coreSettings.AutoConnect == "False" { selected }>Deaktiviert</option>
+								</select>
+							</div>
+						</div>
+
+						<!-- Verzeichnisse -->
+						<div class="pt-6 border-t border-white/5">
+							<h4 class="text-xs font-bold text-lime-400 mb-6 uppercase tracking-widest">Verzeichnisse</h4>
+							<div class="space-y-6">
+								<div class="space-y-2">
+									<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Incoming (Fertige Dateien)</label>
+									<input type="text" name="incoming_dir" value={ coreSettings.IncomingDir } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none text-sm" />
+								</div>
+								<div class="space-y-2">
+									<label class="block text-[11px] font-bold uppercase text-slate-500 tracking-widest">Temporary (Laufende Downloads)</label>
+									<input type="text" name="temp_dir" value={ coreSettings.TempDir } class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus:border-lime-400/50 outline-none text-sm" />
+								</div>
+							</div>
+						</div>
+
+						<div class="pt-6 flex justify-end">
+							<button type="submit" class="bg-lime-400 hover:bg-lime-300 text-ink-900 px-8 py-3 rounded-xl font-bold transition-all shadow-glow-lime active:scale-95 flex items-center gap-2">
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+								Einstellungen speichern
+							</button>
+						</div>
+					</div>
+				</form>
+			</div>
+
+			<!-- Docker Path Mapping Section -->
+			<div class="card-bg border border-white/5 rounded-2xl overflow-hidden shadow-xl" x-data={ fmt.Sprintf("{ mappings: %s, newDocker: '', newHost: '' }", marshalMappings(lock.PathMappings)) }>
+				<div class="px-6 py-4 bg-white/5 border-b border-white/5 flex items-center justify-between">
+					<div class="flex items-center gap-3">
+						<svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+						<h3 class="text-xl font-bold">Docker Pfad-Mapping</h3>
+					</div>
+					<button 
+						@click="saveMappings($el)"
+						class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold transition-all"
+					>
+						Mappings speichern
+					</button>
+				</div>
+				<div class="p-6 space-y-6">
+					<p class="text-sm text-slate-400 leading-relaxed">
+						Hier kannst du Pfade "übersetzen". Wenn der Core einen Docker-Pfad (z.B. <code class="text-lime-400">/mnt/Video</code>) meldet, zeigt aJnX stattdessen deinen Host-Pfad (z.B. <code class="text-blue-400">/UpCinema2</code>) an.
+					</p>
+
+					<div class="space-y-3">
+						<template x-for="(host, docker) in mappings" :key="docker">
+							<div class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 group">
+								<div class="flex-1 grid grid-cols-2 gap-4">
+									<div class="flex flex-col">
+										<span class="text-[9px] uppercase font-bold text-slate-500 mb-1">Docker Pfad</span>
+										<span class="text-sm font-mono text-lime-400" x-text="docker"></span>
+									</div>
+									<div class="flex flex-col">
+										<span class="text-[9px] uppercase font-bold text-slate-500 mb-1">Host Pfad</span>
+										<span class="text-sm font-mono text-blue-400" x-text="host"></span>
+									</div>
+								</div>
+								<button @click="delete mappings[docker]" class="p-2 text-slate-600 hover:text-rose-400 transition-colors">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+								</button>
+							</div>
+						</template>
+
+						<!-- Add Row -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/5">
+							<div class="space-y-2">
+								<label class="block text-[10px] font-bold uppercase text-slate-500">Neuer Docker Pfad</label>
+								<input type="text" x-model="newDocker" placeholder="/config/appleJuice" class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-lime-400/30" />
+							</div>
+							<div class="space-y-2">
+								<label class="block text-[10px] font-bold uppercase text-slate-500">Neuer Host Pfad</label>
+								<div class="flex gap-2">
+									<input type="text" x-model="newHost" placeholder="/UpApps/appleJuice/config" class="flex-1 bg-white/5 border border-white/5 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-400/30" />
+									<button 
+										@click="if(newDocker && newHost) { mappings[newDocker] = newHost; newDocker = ''; newHost = ''; }"
+										class="px-4 bg-white/10 hover:bg-white/20 rounded-xl text-white font-bold text-sm transition-all active:scale-95"
+									>
+										+
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<script>
+					function saveMappings(btn) {
+						const data = Alpine.$data(btn).mappings;
+						fetch('/settings/path-mappings', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(data)
+						}).then(res => {
+							if(res.ok) showToast('Mappings gespeichert!', 'success');
+							else showToast('Fehler beim Speichern', 'error');
+						});
+					}
+				</script>
+			</div>
+
+			<!-- Browser Integration -->
+			<div class="card-bg border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+				<div class="px-6 py-4 bg-white/5 border-b border-white/5 flex items-center gap-3">
+					<svg class="w-6 h-6 text-lime-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+					<h3 class="text-xl font-bold">Browser Integration</h3>
+				</div>
+				<div class="p-6 space-y-6">
+					<p class="text-sm text-slate-400 leading-relaxed">
+						Registriere aJnX als Standard-Programm für appleJuice-Links (<code class="bg-white/5 px-1.5 py-0.5 rounded text-lime-400">ajfsp://</code>). 
+						Dies ermöglicht das Hinzufügen von Downloads mit einem Klick direkt aus deinem Browser.
+					</p>
+					<button 
+						onclick="registerProtocol()" 
+						class="bg-white/5 hover:bg-white/10 border border-white/5 px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-sm shadow-xl active:scale-95"
+					>
+						<svg class="w-5 h-5 text-lime-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+						Protokoll-Handler registrieren
+					</button>
+					<script>
+						function registerProtocol() {
+							if ('registerProtocolHandler' in navigator) {
+								const url = window.location.origin + '/links?link=%s';
+								try {
+									navigator.registerProtocolHandler("web+ajfsp", url, "aJnX Link Handler");
+									showToast('Anfrage gesendet. Bitte bestätige den Browser-Dialog.', 'success');
+								} catch (e) {
+									showToast('Fehler: ' + e.message, 'error');
+								}
+							} else {
+								showToast('Browser nicht unterstützt.', 'error');
+							}
+						}
+					</script>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+func marshalMappings(m map[string]string) string {
+	if m == nil {
+		return "{}"
+	}
+	b, _ := json.Marshal(m)
+	return string(b)
+}

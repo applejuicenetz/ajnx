@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/applejuicenetz/ajnx/internal/core"
-	"github.com/applejuicenetz/ajnx/internal/gateway"
-	"github.com/applejuicenetz/ajnx/internal/gateway/api"
-	"github.com/applejuicenetz/ajnx/internal/gateway/auth"
-	"github.com/applejuicenetz/ajnx/internal/gateway/poll"
-	"github.com/applejuicenetz/ajnx/internal/plugin"
-	"github.com/applejuicenetz/ajnx/internal/setup"
+	"github.com/applejuicenetz/ajnx/pkg/core"
+	"github.com/applejuicenetz/ajnx/pkg/gateway"
+	"github.com/applejuicenetz/ajnx/pkg/gateway/api"
+	"github.com/applejuicenetz/ajnx/pkg/gateway/auth"
+	"github.com/applejuicenetz/ajnx/pkg/gateway/poll"
+	"github.com/applejuicenetz/ajnx/pkg/plugin"
+	"github.com/applejuicenetz/ajnx/pkg/setup"
 )
 
 func main() {
@@ -75,7 +75,7 @@ func main() {
 		log.Fatal("FEHLER: Weder INTERNAL_API_KEY noch session_secret gefunden.")
 	}
 
-	server := api.NewServer(state, sm, client, nativeClient, internalToken, sessionSecret)
+	server := api.NewServer(state, sm, client, nativeClient, setupMgr, internalToken, sessionSecret)
 	
 	httpServer := &http.Server{
 		Addr:    ":" + port,

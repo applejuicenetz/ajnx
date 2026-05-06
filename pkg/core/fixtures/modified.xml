@@ -1,0 +1,126 @@
+<applejuice>
+<time>1777877160406</time>
+<ids>
+<serverid id="1014"/>
+<serverid id="4"/>
+<serverid id="5"/>
+<serverid id="6"/>
+<serverid id="7"/>
+<serverid id="8"/>
+<serverid id="9"/>
+<serverid id="10"/>
+<serverid id="11"/>
+<serverid id="12"/>
+<downloadid id="1019">
+<userid id="1044"/>
+<userid id="1021"/>
+<userid id="1020"/>
+<userid id="1049"/>
+<userid id="1022"/>
+<userid id="1035"/>
+<userid id="1056"/>
+</downloadid>
+<downloadid id="1018">
+<userid id="1027"/>
+<userid id="1025"/>
+<userid id="1024"/>
+<userid id="1050"/>
+<userid id="1026"/>
+<userid id="1031"/>
+<userid id="1039"/>
+</downloadid>
+<downloadid id="1015">
+<userid id="1057"/>
+<userid id="1029"/>
+<userid id="1028"/>
+<userid id="1051"/>
+<userid id="1030"/>
+<userid id="1058"/>
+<userid id="1023"/>
+</downloadid>
+<downloadid id="3">
+<userid id="1060"/>
+<userid id="1033"/>
+<userid id="1032"/>
+<userid id="1052"/>
+<userid id="1034"/>
+<userid id="1061"/>
+<userid id="1059"/>
+</downloadid>
+<downloadid id="1017">
+<userid id="1063"/>
+<userid id="1037"/>
+<userid id="1036"/>
+<userid id="1053"/>
+<userid id="1038"/>
+<userid id="1064"/>
+<userid id="1062"/>
+</downloadid>
+<downloadid id="1016">
+</downloadid>
+</ids>
+<information credits="-1192941990" sessionupload="0" sessiondownload="1192941990" uploadspeed="0" downloadspeed="17537" openconnections="5" maxuploadpositions="50"/>
+<networkinfo users="412" files="3926779" filesize="1276004905.36" firewalled="false" ip="89.245.65.95" tryconnecttoserver="-1" connectedwithserverid="1014" connectedsince="1777699699005" paused="false">
+<welcomemessage>
+Willkommen auf <b>..::aj-Server::.. appleJuiceNET.cc</b> <br>aktuelle <b>Setups</b> unter <b>https://applejuicenet.cc/</b></br>
+</welcomemessage>
+</networkinfo>
+<download id="3" shareid="1045" hash="a1a7c2d33fc2150960f6b1910a50ece3" size="2026327040" status="0" powerdownload="0" temporaryfilenumber="3" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part3.rar" targetdirectory="" ready="207018531"/>
+<server id="4" name="Im Dienst für appleJuiceNET" host="aj-server.ddnss.de" lastseen="0" port="7003" connectiontry="0"/>
+<server id="5" name="apple-deluxe.co" host="apple-deluxe.ddns.net" lastseen="0" port="9855" connectiontry="0"/>
+<server id="6" name="Apfelkompott" host="chimera.goip.de" lastseen="0" port="9856" connectiontry="0"/>
+<server id="7" name="Knastbruder" host="knastbruder.applejuicenet.cc" lastseen="0" port="9855" connectiontry="0"/>
+<server id="8" name="Knastopa" host="knastopa.applejuicenet.cc" lastseen="0" port="9855" connectiontry="3"/>
+<server id="9" name="Knastschwester" host="knastschwester.applejuicenet.cc" lastseen="0" port="9855" connectiontry="0"/>
+<server id="10" name="moh's Taverne Zum Alten Saftsack" host="m0h.ddnss.de" lastseen="0" port="33210" connectiontry="0"/>
+<server id="11" name="appleJuiceNET.cc" host="rainer22.ddns.net" lastseen="0" port="9855" connectiontry="0"/>
+<server id="12" name="The cake is a lie" host="red171.applejuicenet.cc" lastseen="0" port="9855" connectiontry="0"/>
+<server id="1014" name="..::aj-Server::.. appleJuiceNET.cc" host="aj-server.ddnss.de" lastseen="1777877134760" port="7001" connectiontry="1"/>
+<download id="1015" shareid="1055" hash="67ee1bffb67f495dbdf51e985dc2741b" size="2026327040" status="0" powerdownload="0" temporaryfilenumber="1" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part1.rar" targetdirectory="" ready="150750459"/>
+<download id="1016" shareid="1047" hash="e6f0304e71ba86c6b85b90bef61ce98b" size="2026327040" status="0" powerdownload="0" temporaryfilenumber="2" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part2.rar" targetdirectory="" ready="194971211"/>
+<download id="1017" shareid="1048" hash="ad89c85ca5be067615744eedee9f8633" size="2026327040" status="0" powerdownload="0" temporaryfilenumber="4" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part4.rar" targetdirectory="" ready="208069759"/>
+<download id="1018" shareid="1046" hash="66fa6f1858c55868c6f3da58dcb19448" size="2026327040" status="0" powerdownload="0" temporaryfilenumber="5" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part5.rar" targetdirectory="" ready="212480509"/>
+<download id="1019" shareid="1040" hash="4c837a3481763a14dceea84b47799471" size="2026322384" status="0" powerdownload="0" temporaryfilenumber="6" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part6.rar" targetdirectory="" ready="214271425"/>
+<user id="1020" source="6" downloadid="1019" status="15" directstate="1" downloadfrom="829480962" downloadto="831447042" actualdownloadposition="829480962" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part6.rar" nickname="Eismann3@apple-deluxe.cc"/>
+<user id="1021" source="6" downloadid="1019" status="15" directstate="1" downloadfrom="873548961" downloadto="875515041" actualdownloadposition="873548961" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part6.rar" nickname="PepsiRaver@apple-deluxe.co"/>
+<user id="1022" source="6" downloadid="1019" status="15" directstate="1" downloadfrom="869631845" downloadto="871597925" actualdownloadposition="869631845" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part6.rar" nickname="worschder"/>
+<user id="1023" source="6" downloadid="1015" status="15" directstate="1" downloadfrom="1059328031" downloadto="1060188191" actualdownloadposition="1059328031" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part1.rar" nickname="Slat0r"/>
+<user id="1024" source="6" downloadid="1018" status="15" directstate="1" downloadfrom="440687311" downloadto="442653391" actualdownloadposition="440687311" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part5.rar" nickname="Eismann3@apple-deluxe.cc"/>
+<user id="1025" source="6" downloadid="1018" status="15" directstate="1" downloadfrom="1981089599" downloadto="1981908799" actualdownloadposition="1981089599" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part5.rar" nickname="PepsiRaver@apple-deluxe.co"/>
+<user id="1026" source="6" downloadid="1018" status="15" directstate="1" downloadfrom="1981089599" downloadto="1981908799" actualdownloadposition="1981089599" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part5.rar" nickname="worschder"/>
+<user id="1027" source="6" downloadid="1018" status="15" directstate="1" downloadfrom="6871152" downloadto="7977072" actualdownloadposition="6871152" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part5.rar" nickname="Warlock100"/>
+<user id="1028" source="6" downloadid="1015" status="15" directstate="1" downloadfrom="1059328031" downloadto="1059745551" actualdownloadposition="1059328031" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part1.rar" nickname="Eismann3@apple-deluxe.cc"/>
+<user id="1029" source="6" downloadid="1015" status="15" directstate="1" downloadfrom="1059328031" downloadto="1059745551" actualdownloadposition="1059328031" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part1.animation.rar" nickname="PepsiRaver@apple-deluxe.co"/>
+<user id="1030" source="6" downloadid="1015" status="15" directstate="1" downloadfrom="1658498576" downloadto="1660464656" actualdownloadposition="1658498576" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part1.rar" nickname="worschder"/>
+<user id="1031" source="6" downloadid="1018" status="15" directstate="1" downloadfrom="436829742" downloadto="438795822" actualdownloadposition="436829742" speed="0" version="0.34.101.42" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part5.rar" nickname="Chakotay"/>
+<user id="1032" source="6" downloadid="3" status="15" directstate="1" downloadfrom="394118919" downloadto="396170699" actualdownloadposition="394118919" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part3.rar" nickname="Eismann3@apple-deluxe.cc"/>
+<user id="1033" source="6" downloadid="3" status="15" directstate="1" downloadfrom="0" downloadto="736366" actualdownloadposition="0" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part3.rar" nickname="PepsiRaver@apple-deluxe.co"/>
+<user id="1034" source="6" downloadid="3" status="15" directstate="1" downloadfrom="394118919" downloadto="396170699" actualdownloadposition="394118919" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part3.rar" nickname="worschder"/>
+<user id="1035" source="6" downloadid="1019" status="15" directstate="1" downloadfrom="790116688" downloadto="792082768" actualdownloadposition="790116688" speed="0" version="0.34.101.42" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part6.rar" nickname="Chakotay"/>
+<user id="1036" source="6" downloadid="1017" status="15" directstate="1" downloadfrom="42402786" downloadto="45267934" actualdownloadposition="42402786" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part4.rar" nickname="Eismann3@apple-deluxe.cc"/>
+<user id="1037" source="6" downloadid="1017" status="15" directstate="1" downloadfrom="42402786" downloadto="44368866" actualdownloadposition="42402786" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part4.rar" nickname="PepsiRaver@apple-deluxe.co"/>
+<user id="1038" source="6" downloadid="1017" status="15" directstate="1" downloadfrom="427223870" downloadto="427951257" actualdownloadposition="427223870" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part4.rar" nickname="worschder"/>
+<user id="1039" source="6" downloadid="1018" status="7" directstate="1" downloadfrom="1981048639" downloadto="1981908799" actualdownloadposition="1981697855" speed="5120" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part5.rar" nickname="Slat0r"/>
+<user id="1041" source="6" downloadid="1016" status="15" directstate="1" downloadfrom="1068164548" downloadto="1070130628" actualdownloadposition="1068164548" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part2.rar" nickname="Eismann3@apple-deluxe.cc"/>
+<user id="1042" source="6" downloadid="1016" status="15" directstate="1" downloadfrom="2023261588" downloadto="2024360960" actualdownloadposition="2023261588" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part2.rar" nickname="PepsiRaver@apple-deluxe.co"/>
+<user id="1043" source="6" downloadid="1016" status="15" directstate="1" downloadfrom="629304450" downloadto="630156466" actualdownloadposition="629304450" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part2.rar" nickname="worschder"/>
+<user id="1044" source="6" downloadid="1019" status="15" directstate="1" downloadfrom="877862598" downloadto="878968518" actualdownloadposition="877862598" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part6.rar" nickname="Warlock100"/>
+<user id="1049" source="6" downloadid="1019" status="15" directstate="1" downloadfrom="803582107" downloadto="805548187" actualdownloadposition="803582107" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part6.rar" nickname="MisterX"/>
+<user id="1050" source="6" downloadid="1018" status="15" directstate="1" downloadfrom="6871152" downloadto="9632883" actualdownloadposition="6871152" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part5.rar" nickname="MisterX"/>
+<user id="1051" source="6" downloadid="1015" status="15" directstate="1" downloadfrom="1059745551" downloadto="1062220623" actualdownloadposition="1059745551" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part1.rar" nickname="MisterX"/>
+<user id="1052" source="6" downloadid="3" status="15" directstate="1" downloadfrom="394118919" downloadto="396170699" actualdownloadposition="394118919" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part3.rar" nickname="MisterX"/>
+<user id="1053" source="6" downloadid="1017" status="15" directstate="1" downloadfrom="427223870" downloadto="427951257" actualdownloadposition="427223870" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part4.rar" nickname="MisterX"/>
+<user id="1054" source="6" downloadid="1016" status="15" directstate="1" downloadfrom="631807339" downloadto="633773419" actualdownloadposition="631807339" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part2.rar" nickname="MisterX"/>
+<user id="1056" source="6" downloadid="1019" status="15" directstate="1" downloadfrom="871036383" downloadto="871896543" actualdownloadposition="871036383" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part6.rar" nickname="Slat0r"/>
+<user id="1057" source="6" downloadid="1015" status="15" directstate="1" downloadfrom="1059745551" downloadto="1060851471" actualdownloadposition="1059745551" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part1.rar" nickname="Warlock100"/>
+<user id="1058" source="6" downloadid="1015" status="15" directstate="1" downloadfrom="1059328031" downloadto="1062220623" actualdownloadposition="1059328031" speed="0" version="0.34.101.42" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part1.rar" nickname="Chakotay"/>
+<user id="1059" source="6" downloadid="3" status="7" directstate="1" downloadfrom="398136779" downloadto="398741355" actualdownloadposition="398695883" speed="3686" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part3.rar" nickname="Slat0r"/>
+<user id="1060" source="6" downloadid="3" status="15" directstate="1" downloadfrom="0" downloadto="736366" actualdownloadposition="0" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part3.rar" nickname="Warlock100"/>
+<user id="1061" source="6" downloadid="3" status="15" directstate="1" downloadfrom="398136779" downloadto="398741355" actualdownloadposition="398136779" speed="0" version="0.34.101.42" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part3.rar" nickname="Chakotay"/>
+<user id="1062" source="6" downloadid="1017" status="7" directstate="1" downloadfrom="40645269" downloadto="41505429" actualdownloadposition="41169557" speed="2662" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part4.rar" nickname="Slat0r"/>
+<user id="1063" source="6" downloadid="1017" status="15" directstate="1" downloadfrom="5703924" downloadto="6322570" actualdownloadposition="5703924" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part4.rar" nickname="Warlock100"/>
+<user id="1064" source="6" downloadid="1017" status="15" directstate="1" downloadfrom="427223870" downloadto="427951257" actualdownloadposition="427223870" speed="0" version="0.34.101.42" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part4.rar" nickname="Chakotay"/>
+<user id="1065" source="6" downloadid="1016" status="7" directstate="1" downloadfrom="1805934939" downloadto="1806795099" actualdownloadposition="1806745947" speed="5120" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part2.rar" nickname="Slat0r"/>
+<user id="1066" source="6" downloadid="1016" status="15" directstate="1" downloadfrom="630156466" downloadto="631262386" actualdownloadposition="630156466" speed="0" version="0.31.149.113" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part2.rar" nickname="Warlock100"/>
+<user id="1067" source="6" downloadid="1016" status="15" directstate="1" downloadfrom="629304450" downloadto="631270530" actualdownloadposition="629304450" speed="0" version="0.34.101.42" operatingsystem="1" queueposition="999" powerdownload="0" filename="Der.Super.Mario.Galaxy.Film.2026.VoD.MKV.AVC.1080p.AC3.2.0.part2.rar" nickname="Chakotay"/>
+</applejuice>

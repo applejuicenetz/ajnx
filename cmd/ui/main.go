@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/applejuicenetz/ajnx/internal/setup"
-	"github.com/applejuicenetz/ajnx/internal/ui/handler"
+	"github.com/applejuicenetz/ajnx/pkg/setup"
+	"github.com/applejuicenetz/ajnx/pkg/ui/handler"
 )
 
 func main() {
@@ -89,6 +89,7 @@ func main() {
 	mux.Handle("/settings", settingsHandler)
 	mux.Handle("/settings/plugins/toggle", http.HandlerFunc(settingsHandler.HandleTogglePlugin))
 	mux.Handle("/settings/core", http.HandlerFunc(settingsHandler.HandleCoreSettingsUpdate))
+	mux.Handle("/settings/path-mappings", http.HandlerFunc(settingsHandler.HandleUpdatePathMappings))
 
 	// Server-Routen
 	mux.Handle("/server", serversHandler)

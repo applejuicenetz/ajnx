@@ -1,0 +1,507 @@
+package view
+
+import (
+	"github.com/applejuicenetz/ajnx/pkg/domain"
+	"fmt"
+)
+
+templ StatusPage(info *domain.Information, nickname string) {
+	@Layout("Dashboard", "status", nickname) {
+		<div class="space-y-6 animate-in fade-in duration-700">
+			<!-- Update Banner -->
+			if info != nil && info.Version.Available {
+				<div class="bg-lime-400/10 border border-lime-400/20 rounded-2xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top duration-500">
+					<div class="flex items-center gap-4">
+						<div class="w-10 h-10 rounded-full bg-lime-400/20 flex items-center justify-center text-lime-400">
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+						</div>
+						<div>
+							<h3 class="font-bold text-sm">Neue Version verfügbar!</h3>
+							<p class="text-xs text-text-muted">Version { info.Version.Latest } ist jetzt verfügbar. Aktuell nutzt du { info.Version.Current }.</p>
+						</div>
+					</div>
+					<a href="https://github.com/applejuicenetz/ajnx/releases/latest" target="_blank" class="bg-lime-500 hover:bg-lime-400 text-ink-900 text-xs font-bold px-4 py-2 rounded-lg transition-all shadow-glow-lime">Download</a>
+				</div>
+			}
+
+			<!-- Greeting + KPI cards -->
+			<section class="grid grid-cols-12 gap-5">
+				<div class="col-span-12 xl:col-span-4 card-bg rounded-xl border border-white/5 shadow-card p-5 flex flex-col">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+							<span class="w-1.5 h-1.5 rounded-full bg-lime-400"></span> Willkommen zurück!
+						</div>
+						if info != nil && info.Network.ConnectedWithServer != "" {
+							<div class="flex items-center gap-1.5 px-2 py-1 rounded bg-lime-400/10 border border-lime-400/20 text-[10px] font-bold text-lime-400 uppercase tracking-wider">
+								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2L12 22 M 2 12 L 22 12"/></svg>
+								{ info.Network.ConnectedWithServer }
+							</div>
+						}
+					</div>
+					<h1 class="mt-2 text-[26px] font-semibold text-white leading-tight">Dein aJ Core ist online.</h1>
+					<p class="mt-1.5 text-[13.5px] text-slate-400 leading-relaxed">
+						if info != nil {
+							{ fmt.Sprint(info.Session.OpenConnections) } aktive Verbindungen und { fmt.Sprint(info.Network.Users) } Benutzer im Netzwerk. 
+							Du hast aktuell <span class="text-lime-300 font-mono">{ formatSize(info.Session.Credits) }</span> Credits.
+						} else {
+							Lade System-Informationen...
+						}
+					</p>
+					<div class="mt-auto pt-4 flex gap-2">
+						<button hx-get="/search" hx-target="#main-content" class="h-9 px-4 rounded-md bg-lime-500 hover:bg-lime-400 text-ink-900 text-[12.5px] font-semibold transition shadow-glow-lime">+ Suche öffnen</button>
+						<button hx-get="/settings" hx-target="#main-content" class="h-9 px-4 rounded-md bg-white/5 hover:bg-white/10 border border-white/5 text-slate-200 text-[12.5px] font-medium transition">Einstellungen</button>
+					</div>
+				</div>
+
+				<div class="col-span-6 xl:col-span-2 panel-bg rounded-xl border border-white/5 p-4 flex flex-col">
+					<div class="flex items-center justify-between">
+						<span class="text-[11px] uppercase tracking-[0.16em] text-slate-500 font-semibold">Active</span>
+						<div class="flex gap-1">
+							<span class="w-1.5 h-1.5 rounded-full bg-lime-400"></span>
+							<span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+						</div>
+					</div>
+					<div class="mt-3 flex items-center gap-4">
+						<div class="flex flex-col">
+							<span class="text-[24px] font-semibold text-white font-mono leading-none">
+								if info != nil {
+									{ fmt.Sprint(info.Session.ActiveDownloads) }
+								} else {
+									0
+								}
+							</span>
+							<span class="text-[10px] text-slate-500 uppercase mt-1">DL</span>
+						</div>
+						<div class="w-px h-8 bg-white/5"></div>
+						<div class="flex flex-col">
+							<span class="text-[24px] font-semibold text-white font-mono leading-none">
+								if info != nil {
+									{ fmt.Sprint(info.Session.ActiveUploads) }
+								} else {
+									0
+								}
+							</span>
+							<span class="text-[10px] text-slate-500 uppercase mt-1">UL</span>
+						</div>
+					</div>
+					<div class="mt-3 flex items-center gap-2 text-[10px] font-mono whitespace-nowrap">
+						<span class="text-lime-300">↓ 
+							if info != nil {
+								{ formatSpeedShort(info.Session.DownloadSpeedBps) } { getSpeedUnit(info.Session.DownloadSpeedBps) }
+							} else {
+								0
+							}
+						</span>
+						<span class="text-sky-300">↑ 
+							if info != nil {
+								{ formatSpeedShort(info.Session.UploadSpeedBps) } { getSpeedUnit(info.Session.UploadSpeedBps) }
+							} else {
+								0
+							}
+						</span>
+					</div>
+				</div>
+
+				<!-- KPI: My Share -->
+				<div class="col-span-6 xl:col-span-2 panel-bg rounded-xl border border-white/5 p-4 flex flex-col">
+					<div class="flex items-center justify-between">
+						<span class="text-[11px] uppercase tracking-[0.16em] text-lime-400 font-semibold">My Share</span>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-lime-400"><path d="M4 7 H 14 L 17 4 H 20 V 20 H 4 Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+					</div>
+					<div class="mt-3 flex items-baseline gap-1">
+						<span class="text-[28px] font-semibold text-white font-mono leading-none">
+							if info != nil {
+								{ formatSize(info.Session.ShareSize) }
+							} else {
+								0 B
+							}
+						</span>
+					</div>
+					<div class="mt-2 text-[11px] text-slate-500 font-mono">
+						if info != nil {
+							{ fmt.Sprint(info.Session.ShareFiles) } Dateien
+						} else {
+							0 Dateien
+						}
+					</div>
+				</div>
+
+				<!-- KPI: Peers -->
+				<div class="col-span-6 xl:col-span-2 panel-bg rounded-xl border border-white/5 p-4 flex flex-col">
+					<div class="flex items-center justify-between">
+						<span class="text-[11px] uppercase tracking-[0.16em] text-slate-500 font-semibold">Peers</span>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-slate-500">
+							<circle cx="8" cy="9" r="3" stroke="currentColor" stroke-width="1.7"/>
+							<circle cx="16" cy="9" r="3" stroke="currentColor" stroke-width="1.7"/>
+						</svg>
+					</div>
+					<div class="mt-3 flex items-baseline gap-1">
+						<span class="text-[28px] font-semibold text-white font-mono leading-none">
+							if info != nil {
+								{ fmt.Sprint(info.Network.Users) }
+							} else {
+								0
+							}
+						</span>
+					</div>
+					<div class="mt-2 text-[11px] text-slate-500 font-mono">online im Netzwerk</div>
+				</div>
+
+				<!-- KPI: Network Shared -->
+				<div class="col-span-6 xl:col-span-2 panel-bg rounded-xl border border-white/5 p-4 flex flex-col">
+					<div class="flex items-center justify-between">
+						<span class="text-[11px] uppercase tracking-[0.16em] text-slate-500 font-semibold">Net Share</span>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-slate-500"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" stroke="currentColor" stroke-width="1.7"/></svg>
+					</div>
+					<div class="mt-3 flex items-baseline gap-1">
+						<span class="text-[28px] font-semibold text-white font-mono leading-none">
+							if info != nil {
+								{ formatSize(info.Network.FilesizeMb * 1024 * 1024) }
+							} else {
+								0 GB
+							}
+						</span>
+					</div>
+					<div class="mt-2 text-[11px] text-slate-500 font-mono">
+						if info != nil {
+							{ fmt.Sprint(info.Network.Files) } Dateien
+						}
+					</div>
+				</div>
+			</section>
+
+
+			<!-- Network activity -->
+			<section class="grid grid-cols-12 gap-5" x-data="speedGraph()">
+				<div class="col-span-12 xl:col-span-8 card-bg rounded-xl border border-white/5 shadow-card p-5">
+					<div class="flex items-center justify-between mb-6">
+						<div>
+							<h2 class="text-[15px] font-semibold text-white">Network Activity</h2>
+							<p class="text-[12px] text-slate-500 mt-0.5">Live Transfer Rates (KB/s)</p>
+						</div>
+						<div class="flex items-center gap-4 text-[10px] font-mono">
+							<div class="flex items-center gap-1.5">
+								<span class="w-2 h-2 rounded-full bg-lime-400"></span>
+								<span class="text-slate-400">Download</span>
+								<span class="text-lime-300 font-bold" x-text="lastDL + ' KB/s'"></span>
+							</div>
+							<div class="flex items-center gap-1.5">
+								<span class="w-2 h-2 rounded-full bg-sky-400"></span>
+								<span class="text-slate-400">Upload</span>
+								<span class="text-sky-300 font-bold" x-text="lastUL + ' KB/s'"></span>
+							</div>
+						</div>
+					</div>
+					
+					<div class="relative h-[200px] w-full overflow-hidden rounded-lg bg-black/20 border border-white/5">
+						<!-- Grid lines -->
+						<div class="absolute inset-0 flex flex-col justify-between p-4 opacity-20 pointer-events-none">
+							<div class="border-t border-white/10 w-full"></div>
+							<div class="border-t border-white/10 w-full"></div>
+							<div class="border-t border-white/10 w-full"></div>
+							<div class="border-t border-white/10 w-full"></div>
+						</div>
+
+						<svg class="absolute inset-0 w-full h-full preserve-3d" viewBox="0 0 100 100" preserveAspectRatio="none">
+							<!-- Gradients -->
+							<defs>
+								<linearGradient id="grad-dl" x1="0" y1="0" x2="0" y2="1">
+									<stop offset="0%" stop-color="#a3e635" stop-opacity="0.3"></stop>
+									<stop offset="100%" stop-color="#a3e635" stop-opacity="0"></stop>
+								</linearGradient>
+								<linearGradient id="grad-ul" x1="0" y1="0" x2="0" y2="1">
+									<stop offset="0%" stop-color="#38bdf8" stop-opacity="0.3"></stop>
+									<stop offset="100%" stop-color="#38bdf8" stop-opacity="0"></stop>
+								</linearGradient>
+							</defs>
+
+							<!-- UL Area -->
+							<path :d="getAreaPath(pointsUL)" fill="url(#grad-ul)" class="transition-all duration-1000 ease-in-out"></path>
+							<!-- DL Area -->
+							<path :d="getAreaPath(pointsDL)" fill="url(#grad-dl)" class="transition-all duration-1000 ease-in-out"></path>
+							
+							<!-- UL Line -->
+							<path :d="getLinePath(pointsUL)" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="transition-all duration-1000 ease-in-out"></path>
+							<!-- DL Line -->
+							<path :d="getLinePath(pointsDL)" fill="none" stroke="#a3e635" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="transition-all duration-1000 ease-in-out"></path>
+						</svg>
+					</div>
+				</div>
+
+				<div class="col-span-12 xl:col-span-4 card-bg rounded-xl border border-white/5 shadow-card p-5 flex flex-col">
+					<div class="flex items-center justify-between">
+						<div>
+							<h2 class="text-[15px] font-semibold text-white">System Info</h2>
+							<p class="text-[12px] text-slate-500 mt-0.5">Software & Core Details</p>
+						</div>
+					</div>
+					<div class="mt-4 space-y-4">
+						<div class="flex justify-between items-center py-2 border-b border-white/5">
+							<span class="text-xs text-slate-400">aJnX Version</span>
+							<span class={ "font-mono font-bold text-xs ", templ.KV("text-lime-400", info == nil || !info.Version.Available), templ.KV("text-rose-400", info != nil && info.Version.Available) }>
+								if info != nil {
+									V{ info.Version.Current }
+									if info.Version.Available {
+										<span class="ml-1">!</span>
+									}
+								} else {
+									V{ domain.Version }
+								}
+							</span>
+						</div>
+						<div class="flex justify-between items-center py-2 border-b border-white/5">
+							<span class="text-xs text-slate-400">Core Version</span>
+							<span class="font-mono font-bold text-xs text-white">
+								if info != nil {
+									{ info.Core.Version }
+								} else {
+									—
+								}
+							</span>
+						</div>
+						<div class="flex justify-between items-center py-2 border-b border-white/5">
+							<span class="text-xs text-slate-400">OS</span>
+							<span class="font-mono font-bold text-xs text-white uppercase">
+								if info != nil {
+									{ info.Core.OS.String() }
+								} else {
+									—
+								}
+							</span>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- OOB Update Container -->
+			<div id="dashboard-stats"></div>
+		</div>
+	}
+}
+
+
+templ StatusStats(info *domain.Information) {
+	<div id="statusbar" hx-get="/partials/status-stats" hx-trigger="every 5s" hx-swap="outerHTML" class="ml-auto flex items-center gap-1.5">
+		<!-- DOWNLOAD -->
+		<div class="flex items-center gap-2.5 h-9 px-3 rounded-md bg-ink-800 border border-white/5">
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-lime-400">
+				<path d="M12 4 V 15 M 7 11 L 12 16 L 17 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+				<path d="M5 19 H 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+			</svg>
+			<div class="flex items-baseline gap-1">
+				<span class="text-[13px] font-mono font-semibold text-white">
+					if info != nil {
+						{ formatSpeedShort(info.Session.DownloadSpeedBps) }
+					} else {
+						0
+					}
+				</span>
+				<span class="text-[10.5px] font-mono text-slate-500 uppercase">
+					if info != nil {
+						{ getSpeedUnit(info.Session.DownloadSpeedBps) }
+					} else {
+						B/s
+					}
+				</span>
+			</div>
+		</div>
+
+		<!-- SERVER -->
+		<div class="hidden md:flex items-center gap-2.5 h-9 px-3 rounded-md bg-ink-800 border border-white/5">
+			<div class={ "w-1.5 h-1.5 rounded-full ", templ.KV("bg-lime-400 animate-pulse", info != nil && info.Network.ConnectedWithServer != ""), templ.KV("bg-rose-500", info == nil || info.Network.ConnectedWithServer == "") }></div>
+			<span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+				if info != nil && info.Network.ConnectedWithServer != "" {
+					{ info.Network.ConnectedWithServer }
+				} else {
+					OFFLINE
+				}
+			</span>
+		</div>
+
+		<!-- UPLOAD -->
+		<div class="flex items-center gap-2.5 h-9 px-3 rounded-md bg-ink-800 border border-white/5">
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-sky-300">
+				<path d="M12 20 V 9 M 7 13 L 12 8 L 17 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+				<path d="M5 5 H 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+			</svg>
+			<div class="flex items-baseline gap-1">
+				<span class="text-[13px] font-mono font-semibold text-white">
+					if info != nil {
+						{ formatSpeedShort(info.Session.UploadSpeedBps) }
+					} else {
+						0
+					}
+				</span>
+				<span class="text-[10.5px] font-mono text-slate-500 uppercase">
+					if info != nil {
+						{ getSpeedUnit(info.Session.UploadSpeedBps) }
+					} else {
+						B/s
+					}
+				</span>
+			</div>
+		</div>
+
+		<!-- CREDITS -->
+		<div class={ "flex items-center gap-2.5 h-9 px-3 rounded-md border border-white/5 ", templ.KV("bg-ink-800", info == nil || info.Session.Credits >= 0), templ.KV("bg-rose-500/10 border-rose-500/20", info != nil && info.Session.Credits < 0) }>
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-amber-300", info == nil || info.Session.Credits >= 0), templ.KV("text-rose-400", info != nil && info.Session.Credits < 0) }>
+				<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/>
+				<path d="M12 7 V 17 M 9.5 9.5 H 14 a 1.8 1.8 0 0 1 0 3.6 H 10 a 1.8 1.8 0 0 0 0 3.6 H 14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+			</svg>
+			<div class="flex items-baseline gap-1">
+				<span class={ "text-[13px] font-mono font-semibold ", templ.KV("text-white", info == nil || info.Session.Credits >= 0), templ.KV("text-rose-400", info != nil && info.Session.Credits < 0) }>
+					if info != nil {
+						{ formatSizeShort(info.Session.Credits) }
+					} else {
+						0
+					}
+				</span>
+				<span class={ "text-[10.5px] font-mono uppercase ", templ.KV("text-slate-500", info == nil || info.Session.Credits >= 0), templ.KV("text-rose-500/70", info != nil && info.Session.Credits < 0) }>
+					if info != nil {
+						{ getSizeUnit(info.Session.Credits) }
+					} else {
+						B
+					}
+				</span>
+			</div>
+		</div>
+	</div>
+
+	<div id="dashboard-stats" hx-swap-oob="innerHTML">
+		@DashboardStats(info)
+		if info != nil {
+			<script>
+				triggerStatusUpdate({ fmt.Sprintf("%d", info.Session.DownloadSpeedBps/1024) }, { fmt.Sprintf("%d", info.Session.UploadSpeedBps/1024) });
+			</script>
+		}
+	</div>
+}
+
+templ DashboardStats(info *domain.Information) {
+	<!-- Leer lassen da wir nun alles in der Hauptseite haben -->
+}
+
+
+
+
+
+
+
+func formatSpeedShort(bps int64) string {
+	if bps < 1024 {
+		return fmt.Sprintf("%d", bps)
+	}
+	if bps < 1024*1024 {
+		return fmt.Sprintf("%.1f", float64(bps)/1024)
+	}
+	return fmt.Sprintf("%.2f", float64(bps)/(1024*1024))
+}
+
+func getSpeedUnit(bps int64) string {
+	if bps < 1024 {
+		return "B/s"
+	}
+	if bps < 1024*1024 {
+		return "KB/s"
+	}
+	return "MB/s"
+}
+
+func formatSizeShort(bytes int64) string {
+	isNegative := bytes < 0
+	absBytes := bytes
+	if isNegative { absBytes = -bytes }
+	
+	var res string
+	switch {
+	case absBytes < 1024: res = fmt.Sprintf("%d", absBytes)
+	case absBytes < 1024*1024: res = fmt.Sprintf("%.1f", float64(absBytes)/1024)
+	case absBytes < 1024*1024*1024: res = fmt.Sprintf("%.1f", float64(absBytes)/(1024*1024))
+	case absBytes < 1024*1024*1024*1024: res = fmt.Sprintf("%.2f", float64(absBytes)/(1024*1024*1024))
+	default: res = fmt.Sprintf("%.2f", float64(absBytes)/(1024*1024*1024*1024))
+	}
+
+	if isNegative {
+		return "-" + res
+	}
+	return res
+}
+
+func getSizeUnit(bytes int64) string {
+	absBytes := bytes
+	if bytes < 0 { absBytes = -bytes }
+
+	switch {
+	case absBytes < 1024: return "B"
+	case absBytes < 1024*1024: return "KB"
+	case absBytes < 1024*1024*1024: return "MB"
+	case absBytes < 1024*1024*1024*1024: return "GB"
+	default: return "TB"
+	}
+}
+
+
+func formatSpeed(bps int64) string {
+	if bps < 1024 {
+		return fmt.Sprintf("%d B/s", bps)
+	}
+	if bps < 1024*1024 {
+		return fmt.Sprintf("%.1f KB/s", float64(bps)/1024)
+	}
+	return fmt.Sprintf("%.2f MB/s", float64(bps)/(1024*1024))
+}
+
+func formatSize(bytes int64) string {
+	isNegative := bytes < 0
+	absBytes := bytes
+	if isNegative {
+		absBytes = -bytes
+	}
+
+	var result string
+	switch {
+	case absBytes < 1024:
+		result = fmt.Sprintf("%d B", absBytes)
+	case absBytes < 1024*1024:
+		result = fmt.Sprintf("%.1f KB", float64(absBytes)/1024)
+	case absBytes < 1024*1024*1024:
+		result = fmt.Sprintf("%.1f MB", float64(absBytes)/(1024*1024))
+	case absBytes < 1024*1024*1024*1024:
+		result = fmt.Sprintf("%.2f GB", float64(absBytes)/(1024*1024*1024))
+	case absBytes < 1024*1024*1024*1024*1024:
+		result = fmt.Sprintf("%.2f TB", float64(absBytes)/(1024*1024*1024*1024))
+	default:
+		result = fmt.Sprintf("%.2f PB", float64(absBytes)/(1024*1024*1024*1024*1024))
+	}
+
+	if isNegative {
+		return "-" + result
+	}
+	return result
+}
+
+templ StatusError(msg, nickname string) {
+	@Layout("Status - Fehler", "status", nickname) {
+		<div class="max-w-2xl mx-auto mt-12">
+			<div class="bg-status-err/5 border border-status-err/20 rounded-2xl p-8 text-center shadow-xl">
+				<div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-status-err/10 text-status-err mb-6 animate-pulse">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+				</div>
+				<h2 class="text-2xl font-black text-status-err mb-4 uppercase tracking-tight">Verbindung zum Core fehlgeschlagen</h2>
+				<div class="text-text-muted space-y-4 mb-8 leading-relaxed">
+					<p>
+						Wir konnten keine Verbindung zum appleJuice Core aufbauen.
+						Bitte prüfe deine Konfiguration.
+					</p>
+					<div class="bg-background/80 rounded-xl p-4 mt-4 text-xs font-mono text-status-err border border-status-err/10 break-all">
+						{ msg }
+					</div>
+				</div>
+				<div class="flex flex-col sm:flex-row gap-3 justify-center">
+					<a href="/" class="bg-primary hover:bg-primary-hover text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20">Erneut versuchen</a>
+					<a href="/settings" class="bg-surface hover:bg-surface-hover border border-border px-8 py-3 rounded-xl font-bold transition-all">Einstellungen</a>
+				</div>
+			</div>
+		</div>
+	}
+}

@@ -1,0 +1,82 @@
+package view
+
+import "github.com/applejuicenetz/ajnx/pkg/domain"
+
+// LoginPage rendert die Login-Seite – kein Sidebar, kein Nav (analog zum Setup-Layout).
+// errorMsg ist leer wenn kein Fehler vorliegt.
+// welcome=true zeigt eine Willkommensnachricht nach dem ersten Setup.
+templ LoginPage(errorMsg string, welcome bool) {
+	<!DOCTYPE html>
+	<html lang="de" class="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>Anmelden – aJnX</title>
+			<link rel="stylesheet" href="/static/tailwind.css"/>
+			<link rel="manifest" href="/static/manifest.json"/>
+			<link rel="icon" type="image/png" href="/static/icon.png"/>
+			<link rel="shortcut icon" href="/static/icon.png"/>
+			<link rel="apple-touch-icon" href="/static/icon.png"/>
+			<meta name="theme-color" content="#a3e635"/>
+		</head>
+		<body class="bg-background text-text-main font-sans antialiased min-h-screen flex items-center justify-center grid-bg">
+			<div class="w-full max-w-sm px-6 animate-in zoom-in-95 duration-500">
+				<!-- Logo -->
+				<div class="mb-8 flex flex-col items-center">
+					<span class="text-lime-400">
+						@Logo("w-14 h-14")
+					</span>
+					<div class="flex flex-col items-center leading-none mt-4">
+						<span class="text-[28px] font-semibold tracking-tight text-white">aJnX</span>
+						<span class="text-[10px] uppercase tracking-[0.2em] text-slate-500 mt-1">portal access</span>
+					</div>
+				</div>
+
+				<!-- Willkommensmeldung nach Setup -->
+				if welcome {
+					<div class="mb-5 rounded-lg bg-lime-400/10 border border-lime-400/20 px-4 py-3 text-[13px] text-lime-300 flex items-center gap-3">
+						<span class="w-2 h-2 rounded-full bg-lime-400 animate-pulse"></span>
+						Setup abgeschlossen. Bitte melde dich an.
+					</div>
+				}
+
+				<!-- Fehlermeldung -->
+				if errorMsg != "" {
+					<div class="mb-5 rounded-lg bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-[13px] text-rose-300 flex items-center gap-3">
+						<span class="w-2 h-2 rounded-full bg-rose-500"></span>
+						{ errorMsg }
+					</div>
+				}
+
+				<!-- Login-Formular -->
+				<div class="card-bg rounded-xl border border-white/5 p-8 shadow-card backdrop-blur-xl">
+					<h1 class="text-[17px] font-semibold text-white mb-6">Portal Login</h1>
+					<form method="POST" action="/login" class="space-y-5">
+						<div>
+							<label for="password" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Core Password</label>
+							<div class="relative group">
+								<input
+									id="password"
+									name="password"
+									type="password"
+									autocomplete="current-password"
+									required
+									autofocus
+									class="w-full h-11 px-4 rounded-md bg-ink-800 border border-white/5 text-[14px] text-white placeholder-slate-600 focus:outline-none focus:border-lime-400/40 focus:ring-4 focus:ring-lime-400/5 transition"
+									placeholder="••••••••"
+								/>
+							</div>
+						</div>
+						<button
+							type="submit"
+							class="w-full h-11 rounded-md bg-lime-500 hover:bg-lime-400 text-ink-900 font-bold text-[14px] transition shadow-glow-lime active:scale-[0.98]"
+						>
+							Anmelden
+						</button>
+					</form>
+				</div>
+				<p class="mt-8 text-center text-[11px] font-mono text-slate-600">v{ domain.Version } • appleJuice Network eXperience</p>
+			</div>
+		</body>
+	</html>
+}

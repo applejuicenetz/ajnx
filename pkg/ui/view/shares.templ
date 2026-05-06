@@ -1,0 +1,421 @@
+package view
+
+import (
+	"fmt"
+	"github.com/applejuicenetz/ajnx/pkg/domain"
+	"strings"
+	"encoding/json"
+)
+
+templ SharesPage(shares []domain.Share, dirs []domain.ShareDir, tempDir, incomingDir string, pathMappings map[string]string, nickname string) {
+	@Layout("Dateien", "shares", nickname) {
+		<div class="space-y-6 animate-in fade-in duration-500" x-data="{ tab: 'dirs', showBrowser: false, currentPath: '/', search: '', filter: 'all' }">
+			<!-- Page Title & Global Actions -->
+			<div class="flex items-end justify-between">
+				<div>
+					<h1 class="text-3xl font-bold">Freigaben</h1>
+					<p class="text-text-muted mt-1">Verwalte deine gesharedten Verzeichnisse und Dateien.</p>
+				</div>
+				<button 
+					hx-post="/shares/check"
+					hx-swap="none"
+					class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-sm font-semibold transition-all active:scale-95"
+					title="Freigaben jetzt prüfen"
+				>
+					<svg class="w-4 h-4 text-lime-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m0 0H15"/></svg>
+					Refresh
+				</button>
+			</div>
+
+			<!-- Stats -->
+			<div class="grid grid-cols-12 gap-4">
+				<div class="col-span-12 md:col-span-4 card-bg border border-white/5 p-5 rounded-2xl flex flex-col">
+					<span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Gesharedte Dateien</span>
+					<span class="text-2xl font-mono font-bold mt-1">{ fmt.Sprint(len(shares)) }</span>
+				</div>
+				<div class="col-span-12 md:col-span-4 card-bg border border-white/5 p-5 rounded-2xl flex flex-col">
+					<span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Gesamtgröße</span>
+					<span class="text-2xl font-mono font-bold mt-1 text-lime-300">{ formatSize(calculateTotalSize(shares)) }</span>
+				</div>
+				<div class="col-span-12 md:col-span-4 card-bg border border-white/5 p-5 rounded-2xl flex flex-col">
+					<span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Durchschnittliche Größe</span>
+					<span class="text-2xl font-mono font-bold mt-1">
+						if len(shares) > 0 {
+							{ formatSize(calculateTotalSize(shares) / int64(len(shares))) }
+						} else {
+							0 B
+						}
+					</span>
+				</div>
+			</div>
+
+			<!-- Tabs -->
+			<div class="flex gap-1 p-1 bg-white/5 rounded-xl w-fit">
+				<button 
+					@click="tab = 'dirs'"
+					:class="tab === 'dirs' ? 'bg-white/10 text-white shadow-lg' : 'text-slate-400 hover:text-white'"
+					class="px-5 py-2 rounded-lg text-sm font-bold transition-all"
+				>
+					Verzeichnisse
+				</button>
+				<button 
+					@click="tab = 'files'"
+					:class="tab === 'files' ? 'bg-white/10 text-white shadow-lg' : 'text-slate-400 hover:text-white'"
+					class="px-5 py-2 rounded-lg text-sm font-bold transition-all"
+				>
+					Alle Dateien
+				</button>
+			</div>
+
+			<!-- Directories View -->
+			<div x-show="tab === 'dirs'" class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+				<div class="card-bg border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+					<div class="overflow-x-auto">
+						<table class="w-full text-left">
+							<thead>
+								<tr class="text-[10px] uppercase tracking-widest text-slate-500 border-b border-white/5">
+									<th class="px-6 py-4 font-bold">Verzeichnis</th>
+									<th class="px-6 py-4 font-bold text-center w-32">Unterordner</th>
+									<th class="px-6 py-4 font-bold text-right w-24">Aktion</th>
+								</tr>
+							</thead>
+							<tbody id="share-dirs-table" hx-get="/partials/share-dirs" hx-trigger="refreshShares from:body" hx-swap="innerHTML">
+								@ShareDirsTable(dirs, tempDir, incomingDir, pathMappings)
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<!-- Add Share -->
+				<div class="card-bg border border-white/5 p-6 rounded-2xl shadow-xl">
+					<h3 class="text-lg font-bold mb-4">Neues Verzeichnis freigeben</h3>
+					<form hx-post="/shares/add" hx-swap="none" hx-on::after-request="this.reset()" class="flex flex-col md:flex-row gap-4 items-end">
+						<div class="flex-1 space-y-2 w-full relative">
+							<label class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Absoluter Pfad</label>
+							<div class="flex gap-2">
+								<input 
+									type="text" 
+									name="path" 
+									id="add-share-path"
+									required
+									placeholder="/mnt/daten/videos" 
+									class="flex-1 bg-white/5 border border-white/5 rounded-xl px-4 py-3 outline-none focus:border-lime-400/50 transition-all text-sm"
+								/>
+								<button 
+									type="button"
+									@click="showBrowser = true"
+									class="px-4 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-slate-300 transition-all flex items-center gap-2"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+									Durchsuchen
+								</button>
+							</div>
+						</div>
+						<div class="flex items-center gap-3 h-12 px-4 bg-white/5 border border-white/5 rounded-xl group cursor-pointer">
+							<input type="checkbox" name="with_subs" value="1" checked id="sub-check" class="w-4 h-4 rounded border-white/10 bg-transparent text-lime-400 focus:ring-offset-0 focus:ring-0"/>
+							<label for="sub-check" class="text-sm text-slate-300 cursor-pointer select-none">Unterordner</label>
+						</div>
+						<button type="submit" class="h-12 px-8 bg-lime-400 hover:bg-lime-300 text-ink-900 font-bold rounded-xl transition-all shadow-glow-lime active:scale-95">
+							Hinzufügen
+						</button>
+					</form>
+				</div>
+			</div>
+
+			<!-- Files View -->
+			<div x-show="tab === 'files'" class="animate-in fade-in slide-in-from-bottom-2 duration-300" x-data={ fmt.Sprintf("{ temp: '%s', incoming: '%s', mappings: %s }", tempDir, incomingDir, marshalJSON(pathMappings)) }>
+				<div class="card-bg border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+					<div class="p-4 border-b border-white/5 flex flex-col md:flex-row md:items-center gap-4">
+						<div class="flex-1 relative">
+							<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+							<input 
+								type="text" 
+								x-model="search"
+								placeholder="Dateien durchsuchen..." 
+								class="w-full bg-white/5 border border-white/5 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-white/20 transition-all"
+							/>
+						</div>
+						<div class="flex gap-1 p-1 bg-white/5 rounded-xl">
+							<button @click="filter = 'all'" :class="filter === 'all' ? 'bg-white/10 text-white' : 'text-slate-500'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Alle</button>
+							<button @click="filter = 'incoming'" :class="filter === 'incoming' ? 'bg-blue-400/20 text-blue-400' : 'text-slate-500'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Incoming</button>
+							<button @click="filter = 'temp'" :class="filter === 'temp' ? 'bg-lime-400/20 text-lime-400' : 'text-slate-500'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Temp</button>
+							<button @click="filter = 'manual'" :class="filter === 'manual' ? 'bg-purple-400/20 text-purple-400' : 'text-slate-500'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Manuell</button>
+						</div>
+					</div>
+					<div class="overflow-x-auto">
+						<table class="w-full text-left">
+							<thead>
+								<tr class="text-[10px] uppercase tracking-widest text-slate-500 border-b border-white/5">
+									<th class="px-6 py-4 font-bold">Dateiname</th>
+									<th class="px-6 py-4 font-bold text-right w-32">Größe</th>
+									<th class="px-6 py-4 font-bold text-center w-32">Bereich</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-white/[0.02]">
+								for _, s := range shares {
+									<tr 
+										x-show={ fmt.Sprintf("(search === '' || $el.innerText.toLowerCase().includes(search.toLowerCase())) && (filter === 'all' || (filter === 'incoming' && '%s'.startsWith(incoming)) || (filter === 'temp' && '%s'.startsWith(temp)) || (filter === 'manual' && !'%s'.startsWith(incoming) && !'%s'.startsWith(temp)))", s.Filename, s.Filename, s.Filename, s.Filename) }
+										class="hover:bg-white/[0.01] transition-colors"
+									>
+										<td class="px-6 py-4">
+											<div class="flex flex-col">
+												<span class="text-sm font-medium truncate max-w-xl" title={ s.Filename }>
+													{ translatePath(s.Filename, pathMappings) }
+												</span>
+												<span class="text-[10px] font-mono text-slate-500 mt-1">{ s.Hash }</span>
+											</div>
+										</td>
+										<td class="px-6 py-4 text-right">
+											<span class="text-sm font-mono text-slate-300">{ formatSize(s.Size) }</span>
+										</td>
+										<td class="px-6 py-4 text-center">
+											if len(tempDir) > 0 && len(s.Filename) >= len(tempDir) && s.Filename[:len(tempDir)] == tempDir {
+												<span class="inline-flex px-2 py-0.5 rounded-full bg-lime-400/10 text-[9px] font-bold text-lime-400 uppercase tracking-tighter border border-lime-400/20">Temp</span>
+											} else if len(incomingDir) > 0 && len(s.Filename) >= len(incomingDir) && s.Filename[:len(incomingDir)] == incomingDir {
+												<span class="inline-flex px-2 py-0.5 rounded-full bg-blue-400/10 text-[9px] font-bold text-blue-400 uppercase tracking-tighter border border-blue-400/20">Incoming</span>
+											} else {
+												<span class="inline-flex px-2 py-0.5 rounded-full bg-purple-400/10 text-[9px] font-bold text-purple-400 uppercase tracking-tighter border border-purple-400/20">Manuell</span>
+											}
+										</td>
+									</tr>
+								}
+								if len(shares) == 0 {
+									<tr>
+										<td colspan="3" class="px-6 py-20 text-center">
+											<div class="flex flex-col items-center gap-3 opacity-30">
+												<svg class="w-12 h-12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 0 0 2-2V9.414a1 1 0 0 0-.293-.707l-5.414-5.414A1 1 0 0 0 12.586 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/></svg>
+												<p class="text-sm font-medium uppercase tracking-widest">Keine Dateien gefunden</p>
+											</div>
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- Directory Browser Modal -->
+			<div 
+				x-show="showBrowser" 
+				class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+				@keydown.escape.window="showBrowser = false"
+				style="display: none;"
+			>
+				<div 
+					class="bg-ink-950 border border-white/10 rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
+					@click.away="showBrowser = false"
+				>
+					<div class="p-6 border-b border-white/5 flex items-center justify-between">
+						<div class="flex items-center gap-3">
+							<div class="w-10 h-10 rounded-xl bg-lime-400/10 flex items-center justify-center text-lime-400">
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+							</div>
+							<div>
+								<h3 class="font-bold text-lg">Server-Verzeichnisse</h3>
+								<p class="text-xs text-slate-500 font-mono" x-text="currentPath"></p>
+							</div>
+						</div>
+						<button @click="showBrowser = false" class="p-2 text-slate-500 hover:text-white transition-colors">
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+						</button>
+					</div>
+					
+					<div 
+						id="browser-content" 
+						class="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin"
+						hx-get="/shares/browse?path=/" 
+						hx-trigger="intersect once"
+					>
+						<div class="flex items-center justify-center py-20 opacity-30">
+							<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400"></div>
+						</div>
+					</div>
+
+					<div class="p-6 border-t border-white/5 bg-white/[0.02] flex justify-between items-center">
+						<button 
+							@click="currentPath = currentPath.split('/').slice(0, -1).join('/') || '/'; htmx.ajax('GET', '/shares/browse?path=' + currentPath, {target: '#browser-content'})"
+							class="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors flex items-center gap-2"
+						>
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+							Zurück
+						</button>
+						<button 
+							@click="document.getElementById('add-share-path').value = currentPath; showBrowser = false"
+							class="px-8 py-2.5 bg-lime-400 hover:bg-lime-300 text-ink-900 font-bold rounded-xl transition-all shadow-glow-lime"
+						>
+							Auswählen
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ DirectoryBrowser(currentPath string, dirs []string) {
+	<div class="grid grid-cols-1 gap-1">
+		for _, d := range dirs {
+			<button 
+				@click={ fmt.Sprintf("currentPath = '%s'; htmx.ajax('GET', '/shares/browse?path=' + currentPath, {target: '#browser-content'})", strings.ReplaceAll(d, "'", "\\'")) }
+				class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all text-left group"
+			>
+				<svg class="w-5 h-5 text-slate-500 group-hover:text-lime-400 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+				<span class="text-sm text-slate-300 group-hover:text-white font-medium">{ d }</span>
+			</button>
+		}
+		if len(dirs) == 0 {
+			<div class="py-12 text-center text-slate-600 text-sm italic">
+				Keine Unterverzeichnisse gefunden.
+			</div>
+		}
+	</div>
+}
+
+templ ShareDirsTable(dirs []domain.ShareDir, tempDir, incomingDir string, pathMappings map[string]string) {
+	<!-- Temp Directory -->
+	if tempDir != "" {
+		<tr 
+			class="bg-lime-400/[0.02] border-b border-white/5 hover:bg-lime-400/[0.05] transition-colors cursor-pointer"
+			@click={ fmt.Sprintf("tab = 'files'; search = '%s'; filter = 'temp'", tempDir) }
+		>
+			<td class="px-6 py-4">
+				<div class="flex items-center gap-4">
+					<div class="w-8 h-8 rounded-lg bg-lime-400/10 flex items-center justify-center text-lime-400">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+					</div>
+					<div>
+						<div class="text-sm font-bold text-lime-300">{ translatePath(tempDir, pathMappings) }</div>
+						<div class="text-[10px] font-bold uppercase tracking-wider text-lime-400/50 mt-0.5">Temporäres Verzeichnis (Aktive Downloads)</div>
+						if translatePath(tempDir, pathMappings) != tempDir {
+							<div class="text-[9px] font-mono text-slate-600">Docker: { tempDir }</div>
+						}
+					</div>
+				</div>
+			</td>
+			<td class="px-6 py-4 text-center">
+				<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-bold text-slate-500 uppercase tracking-widest border border-white/5">
+					<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+					System
+				</span>
+			</td>
+			<td class="px-6 py-4 text-right">
+				<div class="w-full flex justify-end">
+					<svg class="w-4 h-4 text-lime-400/50" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+				</div>
+			</td>
+		</tr>
+	}
+
+	<!-- Incoming Directory -->
+	if incomingDir != "" {
+		<tr 
+			class="bg-blue-400/[0.02] border-b border-white/5 hover:bg-blue-400/[0.05] transition-colors cursor-pointer"
+			@click={ fmt.Sprintf("tab = 'files'; search = '%s'; filter = 'incoming'", incomingDir) }
+		>
+			<td class="px-6 py-4">
+				<div class="flex items-center gap-4">
+					<div class="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center text-blue-400">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+					</div>
+					<div>
+						<div class="text-sm font-bold text-blue-300">{ translatePath(incomingDir, pathMappings) }</div>
+						<div class="text-[10px] font-bold uppercase tracking-wider text-blue-400/50 mt-0.5">Eingangs-Verzeichnis (Fertige Downloads)</div>
+						if translatePath(incomingDir, pathMappings) != incomingDir {
+							<div class="text-[9px] font-mono text-slate-600">Docker: { incomingDir }</div>
+						}
+					</div>
+				</div>
+			</td>
+			<td class="px-6 py-4 text-center">
+				<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-bold text-slate-500 uppercase tracking-widest border border-white/5">
+					<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+					System
+				</span>
+			</td>
+			<td class="px-6 py-4 text-right">
+				<div class="w-full flex justify-end">
+					<svg class="w-4 h-4 text-blue-400/50" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+				</div>
+			</td>
+		</tr>
+	}
+
+	<!-- Active Shares -->
+	for _, d := range dirs {
+		<tr 
+			class="hover:bg-white/[0.01] transition-colors border-b border-white/5 cursor-pointer group"
+			@click={ fmt.Sprintf("tab = 'files'; search = '%s'; filter = 'manual'", d.Path) }
+		>
+			<td class="px-6 py-4">
+				<div class="flex items-center gap-4">
+					<div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+					</div>
+					<div>
+						<div class="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">{ translatePath(d.Path, pathMappings) }</div>
+						if translatePath(d.Path, pathMappings) != d.Path {
+							<div class="text-[9px] font-mono text-slate-600">Docker: { d.Path }</div>
+						}
+					</div>
+				</div>
+			</td>
+			<td class="px-6 py-4 text-center" @click.stop>
+				<input 
+					type="checkbox" 
+					checked?={ d.WithSubfolders }
+					hx-post={ fmt.Sprintf("/shares/toggle?path=%s&subs=%s", d.Path, toggleValue(!d.WithSubfolders)) }
+					hx-swap="none"
+					class="w-4 h-4 rounded border-white/10 bg-transparent text-lime-400 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+				/>
+			</td>
+			<td class="px-6 py-4 text-right" @click.stop>
+				<button 
+					hx-post={ fmt.Sprintf("/shares/remove?path=%s", d.Path) }
+					hx-swap="none"
+					hx-confirm="Willst du diese Freigabe wirklich entfernen?"
+					class="p-2 text-slate-500 hover:text-rose-400 transition-colors active:scale-90"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+				</button>
+			</td>
+		</tr>
+	}
+
+	if len(dirs) == 0 && tempDir == "" && incomingDir == "" {
+		<tr>
+			<td colspan="3" class="px-6 py-12 text-center text-slate-500 text-sm italic">
+				Keine Verzeichnisse freigegeben.
+			</td>
+		</tr>
+	}
+}
+
+func calculateTotalSize(shares []domain.Share) int64 {
+	var total int64
+	for _, s := range shares {
+		total += s.Size
+	}
+	return total
+}
+
+func toggleValue(v bool) string {
+	if v {
+		return "1"
+	}
+	return "0"
+}
+
+func translatePath(path string, mappings map[string]string) string {
+	for docker, host := range mappings {
+		if strings.HasPrefix(path, docker) {
+			return strings.Replace(path, docker, host, 1)
+		}
+	}
+	return path
+}
+
+func marshalJSON(v interface{}) string {
+	b, _ := json.Marshal(v)
+	return string(b)
+}

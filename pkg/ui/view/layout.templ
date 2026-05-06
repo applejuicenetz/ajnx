@@ -1,0 +1,431 @@
+package view
+
+import (
+	"fmt"
+	"github.com/applejuicenetz/ajnx/pkg/domain"
+)
+
+// Layout ist das Haupt-Shell für alle App-Seiten nach dem Setup.
+// activePage: "status" | "downloads" | "search" | "server" | "settings" | "shares" | "uploads" | "about"
+// nickname:   Anzeigename aus setup.lock (Snapshot().Nickname)
+templ Layout(title string, activePage string, nickname string) {
+	<!DOCTYPE html>
+	<html lang="de" class="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } – aJnX</title>
+			<link rel="stylesheet" href="/static/tailwind.css"/>
+			<link rel="manifest" href="/static/manifest.json"/>
+			<link rel="icon" type="image/png" href="/static/icon.png"/>
+			<link rel="shortcut icon" href="/static/icon.png"/>
+			<link rel="apple-touch-icon" href="/static/icon.png"/>
+			<meta name="theme-color" content="#a3e635"/>
+			<script src="/static/htmx.min.js"></script>
+			<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script>
+				function speedGraph() {
+					return {
+						pointsDL: [],
+						pointsUL: [],
+						lastDL: 0,
+						lastUL: 0,
+						maxPoints: 30,
+						maxVal: 100,
+						init() {
+							window.addEventListener('status-updated', (e) => {
+								this.addData(e.detail);
+							});
+						},
+						addData(data) {
+							this.lastDL = data.dl;
+							this.lastUL = data.ul;
+							this.pointsDL.push(data.dl);
+							this.pointsUL.push(data.ul);
+							if (this.pointsDL.length > this.maxPoints) {
+								this.pointsDL.shift();
+								this.pointsUL.shift();
+							}
+							let all = [...this.pointsDL, ...this.pointsUL];
+							this.maxVal = Math.max(...all, 100) * 1.1;
+						},
+						getLinePath(points) {
+							if (points.length < 2) return '';
+							let width = 100;
+							let height = 100;
+							let step = width / (this.maxPoints - 1);
+							let path = `M ${(this.maxPoints - points.length) * step} ${height - (points[0] / this.maxVal * height)}`;
+							points.forEach((p, i) => {
+								path += ` L ${(i + (this.maxPoints - points.length)) * step} ${height - (p / this.maxVal * height)}`;
+							});
+							return path;
+						},
+						getAreaPath(points) {
+							let line = this.getLinePath(points);
+							if (!line) return '';
+							let width = 100;
+							let height = 100;
+							let step = width / (this.maxPoints - 1);
+							let firstX = (this.maxPoints - points.length) * step;
+							let lastX = 100;
+							return `${line} L ${lastX} ${height} L ${firstX} ${height} Z`;
+						}
+					}
+				}
+
+				function triggerStatusUpdate(dl, ul) {
+					window.dispatchEvent(new CustomEvent('status-updated', {detail: {dl: dl, ul: ul}}));
+				}
+			</script>
+		</head>
+		<body class="bg-background text-text-main font-sans antialiased overflow-hidden" hx-boost="true">
+			<div class="flex h-screen overflow-hidden" x-data="{ drawerOpen: false }">
+				
+				<!-- Desktop Sidebar -->
+				<aside class="hidden lg:flex w-[240px] shrink-0 border-r border-white/5 bg-ink-900 flex-col">
+					<!-- Brand -->
+					<div class="px-5 pt-5 pb-4 flex items-center gap-2.5">
+						<span class="text-lime-400">
+							@Logo("w-8 h-8")
+						</span>
+						<div class="flex flex-col leading-none">
+							<span class="text-[22px] font-semibold tracking-tight text-lime-400">aJnX</span>
+							<span class="text-[10px] uppercase tracking-[0.18em] text-slate-500 mt-1">portal</span>
+						</div>
+					</div>
+
+					<!-- Nav -->
+					<nav class="px-3 flex-1 overflow-y-auto" hx-target="#main-content" hx-select="#main-content">
+						<div class="px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Network</div>
+						<ul class="space-y-0.5 mb-5">
+							@navItem("/", "status", activePage, "Dashboard") {
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-lime-400", activePage == "status"), templ.KV("text-slate-400", activePage != "status") }>
+									<rect x="3" y="3"  width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+									<rect x="3" y="15" width="8" height="6"  rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+									<rect x="13" y="3"  width="8" height="6"  rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+									<rect x="13" y="11" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+								</svg>
+							}
+							@navItem("/downloads", "downloads", activePage, "Downloads") {
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-lime-400", activePage == "downloads"), templ.KV("text-slate-400", activePage != "downloads") }>
+									<path d="M12 4 V 15 M 7 11 L 12 16 L 17 11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+									<path d="M4 19 H 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+								</svg>
+							}
+							@navItem("/uploads", "uploads", activePage, "Uploads") {
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-lime-400", activePage == "uploads"), templ.KV("text-slate-400", activePage != "uploads") }>
+									<path d="M12 20 V 9 M 7 13 L 12 8 L 17 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+									<path d="M4 5 H 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+								</svg>
+							}
+							@navItem("/search", "search", activePage, "Suche") {
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-lime-400", activePage == "search"), templ.KV("text-slate-400", activePage != "search") }>
+									<circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7"/>
+									<path d="M16 16 L 21 21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+								</svg>
+							}
+							@navItem("/shares", "shares", activePage, "Dateien") {
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-lime-400", activePage == "shares"), templ.KV("text-slate-400", activePage != "shares") }>
+									<path d="M3 6 a 1.5 1.5 0 0 1 1.5 -1.5 H 9 L 11 7 H 19.5 A 1.5 1.5 0 0 1 21 8.5 V 17.5 A 1.5 1.5 0 0 1 19.5 19 H 4.5 A 1.5 1.5 0 0 1 3 17.5 Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+								</svg>
+							}
+							@navItem("/server", "server", activePage, "Server") {
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-lime-400", activePage == "server"), templ.KV("text-slate-400", activePage != "server") }>
+									<rect x="3" y="4"  width="18" height="5" rx="1.2" stroke="currentColor" stroke-width="1.7"/>
+									<rect x="3" y="11" width="18" height="5" rx="1.2" stroke="currentColor" stroke-width="1.7"/>
+									<circle cx="7" cy="6.5" r="0.8" fill="currentColor"/>
+									<circle cx="7" cy="13.5" r="0.8" fill="currentColor"/>
+									<path d="M3 18 H 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+								</svg>
+							}
+						</ul>
+
+						<div class="px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">System</div>
+						<ul class="space-y-0.5">
+							@navItem("/settings", "settings", activePage, "Einstellungen") {
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-lime-400", activePage == "settings"), templ.KV("text-slate-400", activePage != "settings") }>
+									<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/>
+									<path d="M12 3 V 5 M 12 19 V 21 M 3 12 H 5 M 19 12 H 21 M 5.6 5.6 L 7 7 M 17 17 L 18.4 18.4 M 5.6 18.4 L 7 17 M 17 7 L 18.4 5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+								</svg>
+							}
+							@navItem("/about", "about", activePage, "Über aJnX") {
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class={ templ.KV("text-lime-400", activePage == "about"), templ.KV("text-slate-400", activePage != "about") }>
+									<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.7"/>
+									<line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+									<line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+								</svg>
+							}
+						</ul>
+					</nav>
+
+					<!-- User Info Sidebar (Bottom) -->
+					<div class="mt-auto p-3 border-t border-white/5">
+						<div class="flex items-center gap-2.5 px-2 py-2 rounded-md hover:bg-white/[0.03] transition cursor-pointer">
+							<div class="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-lime-600 flex items-center justify-center text-ink-900 font-bold text-[12px]">
+								{ string(nickname[0]) }
+							</div>
+							<div class="flex flex-col leading-tight min-w-0">
+								<span class="text-[12.5px] text-white truncate">{ nickname }</span>
+							</div>
+						</div>
+						<div class="mt-1 px-2 text-[10.5px] text-slate-600 font-mono">v{ domain.Version }</div>
+					</div>
+				</aside>
+
+				<!-- Main Content Area -->
+				<div class="flex-1 flex flex-col min-w-0 bg-background">
+					<!-- Headerbar Desktop -->
+					<header class="hidden lg:flex h-16 border-b border-white/5 bg-ink-900/80 backdrop-blur-md items-center px-6 gap-6 sticky top-0 z-20">
+						<!-- Breadcrumb placeholder -->
+						<div class="flex items-center gap-2 min-w-0">
+							<span class="text-[12px] text-slate-500">System</span>
+							<svg width="10" height="10" viewBox="0 0 24 24" fill="none" class="text-slate-600"><path d="M9 6 L 15 12 L 9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+							<span class="text-[13px] text-white font-medium">{ title }</span>
+						</div>
+
+						<!-- Search/Link Bar -->
+						<div class="hidden md:flex items-center flex-1 max-w-md">
+							<form hx-post="/links" hx-target="#toasts" hx-swap="beforeend" @htmx:after-request="if(event.detail.successful) $el.reset()" class="w-full">
+								<div class="relative group">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-lime-400 transition-colors">
+										<circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7"/>
+										<path d="M16 16 L 21 21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+									</svg>
+									<input 
+										type="text" 
+										name="link"
+										placeholder="AJ-Link oder Suche..."
+										class="w-full h-9 pl-9 pr-16 rounded-md bg-ink-800 border border-white/5 text-[13px] text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-lime-400/40 focus:ring-2 focus:ring-lime-400/10 transition"
+									/>
+									<kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-500 px-1.5 py-0.5 border border-white/10 rounded">⌘K</kbd>
+								</div>
+							</form>
+						</div>
+
+						<!-- Live Stats & Shutdown -->
+						<div id="statusbar" hx-get="/partials/status-stats" hx-trigger="every 5s, load" hx-swap="outerHTML" class="ml-auto flex items-center gap-1.5">
+							<span class="animate-pulse text-xs text-text-muted">Lade Stats...</span>
+						</div>
+
+						<div class="h-6 w-px bg-white/10 mx-1"></div>
+
+						<button 
+							hx-post="/core/shutdown" 
+							hx-confirm="Willst du den appleJuice Core wirklich beenden?"
+							class="h-9 px-3.5 rounded-md bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 hover:text-rose-200 text-[12.5px] font-medium flex items-center gap-2 transition"
+						>
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+								<rect x="6" y="6" width="12" height="12" rx="1.5"/>
+							</svg>
+							Stop Core
+						</button>
+					</header>
+
+					<!-- Mobile Header -->
+					<header class="lg:hidden bg-surface border-b border-border px-4 py-3 sticky top-0 z-50 flex items-center justify-between shrink-0">
+						<div class="flex items-center gap-2 text-primary">
+							@Logo("w-8 h-8")
+							<span class="font-bold text-lg text-text-main">aJnX</span>
+						</div>
+						<button class="p-2 text-text-muted" x-on:click="drawerOpen = true">
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+						</button>
+					</header>
+
+					<!-- Scrollable Content -->
+					<main id="main-content" class="flex-1 overflow-y-auto p-4 lg:p-8 pb-24 lg:pb-8">
+						{ children... }
+					</main>
+
+
+				</div>
+
+				<!-- Mobile Drawer (Slide-in) -->
+				<div x-show="drawerOpen" class="fixed inset-0 z-[100] lg:hidden" style="display: none;">
+					<div class="absolute inset-0 bg-black/60" @click="drawerOpen = false"></div>
+					<div class="absolute right-0 top-0 h-full w-64 bg-surface border-l border-border p-6 shadow-2xl">
+						<div class="flex items-center justify-between mb-8">
+							<span class="font-bold">Menü</span>
+							<button @click="drawerOpen = false" class="p-2 text-text-muted hover:text-text-main"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+						</div>
+						<div class="space-y-1 mb-8">
+							@drawerItem("/", "status", activePage, "Dashboard") {
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+							}
+							@drawerItem("/downloads", "downloads", activePage, "Downloads") {
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+							}
+							@drawerItem("/uploads", "uploads", activePage, "Uploads") {
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+							}
+							@drawerItem("/search", "search", activePage, "Suche") {
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+							}
+							@drawerItem("/shares", "shares", activePage, "Dateien") {
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6 a 1.5 1.5 0 0 1 1.5 -1.5 H 9 L 11 7 H 19.5 A 1.5 1.5 0 0 1 21 8.5 V 17.5 A 1.5 1.5 0 0 1 19.5 19 H 4.5 A 1.5 1.5 0 0 1 3 17.5 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+							}
+							@drawerItem("/server", "server", activePage, "Server") {
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><rect x="3" y="11" width="18" height="5" rx="1"/><path d="M3 18h14"/></svg>
+							}
+							<div class="h-px bg-white/5 my-4"></div>
+							@drawerItem("/settings", "settings", activePage, "Einstellungen") {
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+							}
+						</div>
+						<button 
+							hx-post="/core/shutdown" 
+							hx-confirm="Core beenden?"
+							class="w-full flex items-center justify-center gap-2 bg-status-err/10 hover:bg-status-err/20 border border-status-err/30 text-status-err font-bold py-3 rounded-xl transition-colors"
+						>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+							Core beenden
+						</button>
+					</div>
+				</div>
+
+				<!-- Mobile Bottom Nav -->
+				<nav class="lg:hidden fixed bottom-0 left-0 right-0 z-[60] backdrop-blur-xl bg-surface/80 border-t border-border flex items-center h-20 safe-bottom" hx-target="#main-content" hx-select="#main-content">
+					@mobileNavItem("/", "status", activePage, "Dashboard") {
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+					}
+					@mobileNavItem("/downloads", "downloads", activePage, "Downloads") {
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+					}
+					@mobileNavItem("/search", "search", activePage, "Suche") {
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+					}
+					@mobileNavItem("/uploads", "uploads", activePage, "Uploads") {
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+					}
+					@mobileNavItem("/settings", "settings", activePage, "Einstellungen") {
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+					}
+				</nav>
+			</div>
+
+			<!-- Toast Container -->
+			<div id="toasts" class="fixed bottom-20 lg:bottom-8 right-8 z-[110] flex flex-col gap-2"></div>
+
+			<!-- HTMX Error Handling & Toast Logic -->
+			<script>
+				document.body.addEventListener('htmx:afterRequest', function(evt) {
+					if(evt.detail.successful && evt.detail.elt.getAttribute('hx-post') === '/links') {
+						showToast('Link erfolgreich hinzugefügt', 'success');
+					}
+				});
+
+				function showToast(message, type) {
+					const toast = document.createElement('div');
+					toast.className = `px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-slide-in text-white font-bold ${type === 'success' ? 'bg-status-ok' : 'bg-status-err'}`;
+					toast.innerHTML = `<span>${message}</span>`;
+					document.getElementById('toasts').appendChild(toast);
+					setTimeout(() => {
+						toast.classList.add('animate-slide-out');
+						setTimeout(() => toast.remove(), 500);
+					}, 3000);
+				}
+			</script>
+			<style>
+				@keyframes slide-in { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+				@keyframes slide-out { from { transform: translateY(0); opacity: 1; } to { transform: translateY(20px); opacity: 0; } }
+				.animate-slide-in { animation: slide-in 0.3s ease-out forwards; }
+				.animate-slide-out { animation: slide-out 0.3s ease-in forwards; }
+				
+				/* HTMX Indicator - Zeigt Ladezustand an */
+				.htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+				.htmx-request .htmx-indicator { opacity: 1; }
+				.htmx-request.htmx-indicator { opacity: 1; }
+
+				.safe-bottom {
+					padding-bottom: env(safe-area-inset-bottom, 0);
+				}
+			</style>
+			<script>
+				// SPA Navigation: Active State in der Sidebar aktualisieren
+				document.addEventListener('htmx:afterOnLoad', function(evt) {
+					// Wenn wir via htmx navigieren, aktualisieren wir den Titel und die aktiven Klassen
+					const path = window.location.pathname;
+					const title = evt.detail.xhr.getResponseHeader('X-Page-Title') || document.title;
+					
+					// Sidebar Links
+					document.querySelectorAll('nav a, aside a').forEach(a => {
+						const href = a.getAttribute('href');
+						const isActive = (href === path) || (path === '/' && href === '/') || (href !== '/' && path.startsWith(href));
+						
+						if (isActive) {
+							// Desktop Sidebar
+							if (a.closest('aside')) {
+								a.classList.add('nav-active-strip', 'bg-white/[0.04]', 'text-white');
+								a.classList.remove('text-slate-300', 'hover:bg-white/[0.03]');
+							}
+							// Mobile Bottom Nav
+							if (a.classList.contains('flex-col')) {
+								a.classList.add('text-lime-400');
+								a.classList.remove('text-slate-400');
+								if (!a.querySelector('.mobile-indicator')) {
+									const indicator = document.createElement('div');
+									indicator.className = 'mobile-indicator absolute -top-1 w-10 h-0.5 bg-lime-400 rounded-full shadow-[0_0_12px_rgba(143,209,59,0.55)]';
+									a.prepend(indicator);
+								}
+							}
+						} else {
+							if (a.closest('aside')) {
+								a.classList.remove('nav-active-strip', 'bg-white/[0.04]', 'text-white');
+								a.classList.add('text-slate-300', 'hover:bg-white/[0.03]');
+							}
+							if (a.classList.contains('flex-col')) {
+								a.classList.remove('text-lime-400');
+								a.classList.add('text-slate-400');
+								const indicator = a.querySelector('.mobile-indicator');
+								if (indicator) indicator.remove();
+							}
+						}
+					});
+				});
+			</script>
+		</body>
+	</html>
+}
+
+templ navItem(href string, page string, activePage string, label string) {
+	<li data-active={ fmt.Sprintf("%t", page == activePage) }>
+		<a
+			href={ templ.SafeURL(href) }
+			class={ "relative flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-md transition ", 
+				templ.KV("nav-active-strip bg-white/[0.04] text-white", page == activePage),
+				templ.KV("text-slate-300 hover:bg-white/[0.03] hover:text-white", page != activePage) }
+		>
+			{ children... }
+			<span class="text-[13.5px] font-medium">{ label }</span>
+		</a>
+	</li>
+}
+
+templ mobileNavItem(href string, page string, activePage string, label string) {
+	<a 
+		href={ templ.SafeURL(href) } 
+		class={ "flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-300 relative ", 
+			templ.KV("text-lime-400", page == activePage), 
+			templ.KV("text-slate-400 hover:text-white", page != activePage) }
+	>
+		if page == activePage {
+			<div class="mobile-indicator absolute -top-1 w-10 h-0.5 bg-lime-400 rounded-full shadow-[0_0_12px_rgba(143,209,59,0.55)]"></div>
+		}
+		{ children... }
+		<span class="text-[10px] font-bold uppercase tracking-tight">{ label }</span>
+	</a>
+}
+
+templ drawerItem(href string, page string, activePage string, label string) {
+	<a 
+		href={ templ.SafeURL(href) } 
+		class={ "flex items-center gap-4 px-4 py-3 rounded-xl transition-all ", 
+			templ.KV("bg-primary/10 text-primary font-bold", page == activePage), 
+			templ.KV("text-slate-400 hover:bg-white/5 hover:text-white", page != activePage) }
+		@click="drawerOpen = false"
+	>
+		{ children... }
+		<span class="text-[14px]">{ label }</span>
+	</a>
+}
