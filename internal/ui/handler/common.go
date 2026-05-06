@@ -15,3 +15,12 @@ func addNativeHeader(r *http.Request, req *http.Request) {
 		req.Header.Set("X-AJNX-Native", "true")
 	}
 }
+
+func htmxRedirect(w http.ResponseWriter, r *http.Request, target string) {
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", target)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, target, http.StatusSeeOther)
+}

@@ -20,13 +20,11 @@ import (
 )
 
 func main() {
-	// Konfiguration aus Umgebungsvariablen (Fallback-Werte)
 	port := getEnv("GATEWAY_PORT", "9000")
 	coreHost := getEnv("CORE_HOST", "http://localhost")
 	corePort := getEnv("CORE_XML_PORT", "9851")
 	corePassword := getEnv("CORE_PASSWORD", "applejuice")
 
-	// setup.lock einlesen
 	lockPath := getEnv("SETUP_LOCK_PATH", "./data/setup.lock")
 	sessionSecret := ""
 
@@ -51,7 +49,6 @@ func main() {
 
 	var nativeClient core.CoreClient = nil
 
-	// Plugin System
 	bus := plugin.NewBus()
 	pm := plugin.NewManager(bus)
 	if err := pm.StartAll(); err != nil {
@@ -70,7 +67,6 @@ func main() {
 	poller := poll.NewPoller(client, state, setupMgr)
 	poller.Run(ctx)
 
-	// Interner Service-Token
 	internalToken := getEnv("INTERNAL_API_KEY", "")
 	if internalToken == "" {
 		internalToken = sessionSecret
@@ -79,7 +75,6 @@ func main() {
 		log.Fatal("FEHLER: Weder INTERNAL_API_KEY noch session_secret gefunden.")
 	}
 
-	// API Server
 	server := api.NewServer(state, sm, client, nativeClient, internalToken, sessionSecret)
 	
 	httpServer := &http.Server{

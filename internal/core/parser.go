@@ -5,22 +5,20 @@ import (
 	"io"
 )
 
-// DecodeXML ist ein Hilfs-Wrapper um XML-Daten in eine Struktur zu dekodieren.
 func DecodeXML(r io.Reader, v interface{}) error {
 	decoder := xml.NewDecoder(r)
 	return decoder.Decode(v)
 }
 
-// XML-Strukturen für die Core-Antworten (Mapping auf Domain-Models folgt)
 
-// XMLGeneralInformation für information.xml
+
+
 type XMLGeneralInformation struct {
 	XMLName xml.Name `xml:"applejuice"`
 	Version string   `xml:"generalinformation>version"`
 	System  string   `xml:"generalinformation>system"`
 }
 
-// XMLModified für modified.xml
 type XMLModified struct {
 	XMLName     xml.Name        `xml:"applejuice"`
 	Information *XMLInformation `xml:"information"`
@@ -118,7 +116,6 @@ type XMLServer struct {
 type XMLShareList struct {
 	XMLName xml.Name   `xml:"shares"`
 	Shares  []XMLShare `xml:"share"`
-	// Manche Cores schachteln die Liste in ein <sharelist> Tag
 	Nested struct {
 		Shares []XMLShare `xml:"share"`
 	} `xml:"sharelist"`
@@ -127,7 +124,7 @@ type XMLShareList struct {
 type XMLShare struct {
 	ID            string `xml:"id,attr"`
 	Hash          string `xml:"checksum,attr"`
-	AltHash       string `xml:"hash,attr"` // Alternativ-Tag für manche Core-Versionen
+	AltHash       string `xml:"hash,attr"`
 	Size          int64  `xml:"size,attr"`
 	Filename      string `xml:"filename,attr"`
 	ShortFilename string `xml:"shortfilename,attr"`
@@ -156,7 +153,7 @@ type XMLSettings struct {
 	MaxDownload       int64    `xml:"maxdownload"`
 	SpeedPerSlot      int64    `xml:"speedperslot"`
 	MaxConnections    int      `xml:"maxconnections"`
-	AutoConnect       string   `xml:"autoconnect"` // "True"/"False"
+	AutoConnect       string   `xml:"autoconnect"`
 	MaxSourcesPerFile int      `xml:"maxsourcesperfile"`
 	IncomingDir       string   `xml:"incomingdirectory"`
 	TempDir           string   `xml:"temporarydirectory"`

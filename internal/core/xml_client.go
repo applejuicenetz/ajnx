@@ -20,18 +20,16 @@ import (
 )
 
 
-// XMLCoreClient implementiert die Schnittstelle zum klassischen appleJuice Core.
 type XMLCoreClient struct {
 	mu          sync.RWMutex
 	baseURL     string
-	password    string // MD5 Hash des Passworts
+	password    string
 	sessionID   string
 	httpClient  *http.Client
 	eventBus    *plugin.EventBus
-	staticInfo  *XMLGeneralInformation // einmalig beim Login gecacht
+	staticInfo  *XMLGeneralInformation
 }
 
-// NewXMLCoreClient erstellt einen neuen XML-basierten Client.
 func NewXMLCoreClient(baseURL, password string) *XMLCoreClient {
 	return &XMLCoreClient{
 		baseURL:  baseURL,
@@ -42,7 +40,6 @@ func NewXMLCoreClient(baseURL, password string) *XMLCoreClient {
 	}
 }
 
-// NewXMLCoreClientPrehashed erstellt einen Client mit einem bereits gehashten Passwort.
 func NewXMLCoreClientPrehashed(baseURL, passwordHash string) *XMLCoreClient {
 	return &XMLCoreClient{
 		baseURL:  baseURL,
@@ -53,7 +50,6 @@ func NewXMLCoreClientPrehashed(baseURL, passwordHash string) *XMLCoreClient {
 	}
 }
 
-// UpdateConfig aktualisiert die Verbindungsparameter zur Laufzeit.
 func (c *XMLCoreClient) UpdateConfig(baseURL, passwordHash string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -63,13 +59,11 @@ func (c *XMLCoreClient) UpdateConfig(baseURL, passwordHash string) {
 	c.staticInfo = nil
 }
 
-// md5hex berechnet den MD5-Hash eines Strings.
 func md5hex(s string) string {
 	h := md5.Sum([]byte(s))
 	return hex.EncodeToString(h[:])
 }
 
-// Information fragt Live-Stats vom Core ab.
 func (c *XMLCoreClient) Information(ctx context.Context) (*domain.Information, error) {
 	mod, err := c.fetchModified(ctx)
 	if err != nil {
@@ -83,7 +77,6 @@ func (c *XMLCoreClient) Information(ctx context.Context) (*domain.Information, e
 	return mapInformation(mod, static), nil
 }
 
-// FullUpdate holt alle wichtigen Daten in einem Request.
 func (c *XMLCoreClient) FullUpdate(ctx context.Context) (*domain.Information, []domain.Download, []domain.Upload, error) {
 	mod, err := c.fetchModified(ctx)
 	if err != nil {
@@ -161,7 +154,6 @@ func mapInformation(mod *XMLModified, staticInfo *XMLGeneralInformation) *domain
 	return info
 }
 
-// Downloads fragt die Liste der aktuellen Downloads ab.
 func (c *XMLCoreClient) Downloads(ctx context.Context) ([]domain.Download, error) {
 	mod, err := c.fetchModified(ctx)
 	if err != nil {
@@ -221,7 +213,6 @@ func mapDownloads(mod *XMLModified) []domain.Download {
 	return downloads
 }
 
-// Servers fragt die Serverliste ab.
 func (c *XMLCoreClient) Servers(ctx context.Context) ([]domain.Server, error) {
 	mod, err := c.fetchModified(ctx)
 	if err != nil {
@@ -245,7 +236,6 @@ func mapServers(mod *XMLModified) []domain.Server {
 	return servers
 }
 
-// Uploads fragt die aktuelle Upload-Liste ab.
 func (c *XMLCoreClient) Uploads(ctx context.Context) ([]domain.Upload, error) {
 	mod, err := c.fetchModified(ctx)
 	if err != nil {
@@ -257,14 +247,11 @@ func (c *XMLCoreClient) Uploads(ctx context.Context) ([]domain.Upload, error) {
 func mapUploads(mod *XMLModified) []domain.Upload {
 	var uploads []domain.Upload
 	for _, u := range mod.Users {
-		// In appleJuice XML-API sind User mit DownloadID == "0" Uploads.
-		// User mit DownloadID != "0" sind Quellen für unsere eigenen Downloads.
 		if u.DownloadID != "0" {
 			continue
 		}
 
 		status := domain.UploadWaiting
-		// Mapping laut appleJuice Spezifikation: 1=Active, 2=Queue, 5/6=Connecting, 7=Error
 		switch u.Status {
 		case 1:
 			status = domain.UploadTransferring
@@ -282,13 +269,13 @@ func mapUploads(mod *XMLModified) []domain.Upload {
 			Filename:      u.Filename,
 			Status:        status,
 			SpeedBps:      u.Speed,
-			UploadedBytes: u.Downloaded, // Bei Uploads ist 'Downloaded' das, was wir hochgeladen haben
+			UploadedBytes: u.Downloaded,
 			QueuePosition: u.QueuePosition,
 			IP:            u.IP,
 			Port:          u.Port,
 			Version:       u.Version,
 			OS:            u.OperatingSystem,
-			LastActive:    time.Now(), // Core liefert keinen LastActive Timestamp pro User in modified.xml
+			LastActive:    time.Now(),
 		})
 	}
 
@@ -326,12 +313,11 @@ func (c *XMLCoreClient) CancelDownload(ctx context.Context, ids ...string) error
 }
 
 func (c *XMLCoreClient) SetPowerDownload(ctx context.Context, id string, powerDownload float64) error {
-	// CoreValue = (UIValue * 10) - 10
 	coreValue := int((powerDownload * 10) - 10)
 	if coreValue < -10 {
 		coreValue = -10
 	}
-	if coreValue > 1000 { // appleJuice Limit ist meist 100, aber wir erlauben etwas mehr
+	if coreValue > 1000 {
 		coreValue = 1000
 	}
 
@@ -593,7 +579,6 @@ func (c *XMLCoreClient) SetShares(ctx context.Context, shares []domain.ShareDir)
 	return nil
 }
 
-// Shares fragt die Liste der freigegebenen Dateien ab.
 func (c *XMLCoreClient) Shares(ctx context.Context) ([]domain.Share, error) {
 	resp, err := c.doRequest(ctx, "/xml/share.xml")
 	if err != nil {

@@ -18,7 +18,6 @@ func main() {
 	lockPath := getEnv("SETUP_LOCK_PATH", "./data/setup.lock")
 	fs := http.FileServer(http.Dir("web/static"))
 
-	// Schreibrechte auf das Daten-Verzeichnis prüfen.
 	lockDir := filepath.Dir(lockPath)
 	if err := os.MkdirAll(lockDir, 0755); err != nil {
 		log.Fatalf(
@@ -29,13 +28,11 @@ func main() {
 		)
 	}
 
-	// Setup-Infrastruktur
 	setupMgr, err := setup.NewManager(lockPath)
 	if err != nil {
 		log.Fatal("Setup Manager Fehler:", err)
 	}
 
-	// Nickname + Session-Secret aus setup.lock lesen
 	nickname := ""
 	sessionSecret := ""
 	if setupMgr.IsComplete() {
@@ -61,16 +58,12 @@ func main() {
 	aboutHandler := handler.NewAboutHandler(nickname)
 	helpHandler := handler.NewHelpHandler(nickname)
 
-	// Router & Middleware
 	mux := http.NewServeMux()
 
-	// Statische Dateien (immer erlaubt)
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	// Wizard-Routen (kein Auth erforderlich)
 	mux.Handle("/setup/", setupHandler)
 
-	// Login-Route (kein Auth erforderlich)
 	mux.Handle("/login", loginHandler)
 
 	// Downloads-Routen
@@ -130,7 +123,6 @@ func main() {
 	})
 
 
-	// Haupt-Routen hinter SetupGuard + LoginGuard
 	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Wir holen den Nickname dynamisch, falls er sich durch das Setup geändert hat
 		currentNick := nickname
@@ -155,7 +147,6 @@ func main() {
 		}
 	})
 
-	// Guard-Schichtung: erst Setup prüfen (SetupGuard), dann Login (LoginGuard)
 	guardedMain := handler.LoginGuard(setupMgr)(mainHandler)
 	finalHandler := handler.SetupGuard(setupMgr)(buildMux(mux, guardedMain))
 
