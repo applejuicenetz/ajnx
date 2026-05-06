@@ -16,6 +16,11 @@ templ SetupPageLayout(title string, step int, totalSteps int) {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title } – Setup – aJnX</title>
 			<link rel="stylesheet" href="/static/tailwind.css"/>
+			<link rel="manifest" href="/static/manifest.json"/>
+			<link rel="icon" type="image/png" href="/static/icon.png"/>
+			<link rel="shortcut icon" href="/static/icon.png"/>
+			<link rel="apple-touch-icon" href="/static/icon.png"/>
+			<meta name="theme-color" content="#a3e635"/>
 			<script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
 		</head>
 		<body class="bg-background text-text-main font-sans antialiased min-h-screen">

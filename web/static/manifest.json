@@ -1,0 +1,17 @@
+{
+  "name": "aJnX – appleJuice Next eXperience",
+  "short_name": "aJnX",
+  "description": "Moderner Web-Client für das appleJuice Netzwerk",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#a3e635",
+  "icons": [
+    {
+      "src": "/static/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
