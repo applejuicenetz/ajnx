@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/applejuicenetz/ajnx/internal/core"
-	"github.com/applejuicenetz/ajnx/internal/core/native"
+//	"github.com/applejuicenetz/ajnx/internal/core/native"
 	"github.com/applejuicenetz/ajnx/internal/gateway"
 	"github.com/applejuicenetz/ajnx/internal/gateway/api"
 	"github.com/applejuicenetz/ajnx/internal/gateway/auth"
@@ -51,8 +51,9 @@ func main() {
 		client = core.NewXMLCoreClient(coreURL, corePassword)
 	}
 
-	// Native Core (Secret)
-	nativeClient := native.NewNativeCore()
+	// Native Core (Secret) - Deaktiviert, da aktuell irrelevant für CI/CD Einstieg
+	// nativeClient := native.NewNativeCore()
+	var nativeClient core.CoreClient = nil
 
 	// Plugin System
 	bus := plugin.NewBus()
