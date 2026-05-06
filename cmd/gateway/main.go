@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/applejuicenetz/ajnx/internal/core"
-//	"github.com/applejuicenetz/ajnx/internal/core/native"
 	"github.com/applejuicenetz/ajnx/internal/gateway"
 	"github.com/applejuicenetz/ajnx/internal/gateway/api"
 	"github.com/applejuicenetz/ajnx/internal/gateway/auth"
@@ -42,7 +41,6 @@ func main() {
 		sessionSecret = snap.SessionSecret
 	}
 
-	// Core Client initialisieren
 	coreURL := fmt.Sprintf("%s:%s", coreHost, corePort)
 	var client *core.XMLCoreClient
 	if setupMgr != nil && setupMgr.IsComplete() {
@@ -51,8 +49,6 @@ func main() {
 		client = core.NewXMLCoreClient(coreURL, corePassword)
 	}
 
-	// Native Core (Secret) - Deaktiviert, da aktuell irrelevant für CI/CD Einstieg
-	// nativeClient := native.NewNativeCore()
 	var nativeClient core.CoreClient = nil
 
 	// Plugin System
@@ -65,11 +61,9 @@ func main() {
 
 	client.SetEventBus(bus)
 
-	// State und Auth
 	state := gateway.NewState()
 	sm := auth.NewSessionManager()
 
-	// Poller starten (WICHTIG: setupMgr übergeben für dynamisches Reload)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

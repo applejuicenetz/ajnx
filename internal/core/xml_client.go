@@ -20,7 +20,7 @@ import (
 )
 
 
-// XMLCoreClient ist die Implementierung des CoreClient-Interfaces für die XML-Schnittstelle.
+// XMLCoreClient implementiert die Schnittstelle zum klassischen appleJuice Core.
 type XMLCoreClient struct {
 	mu          sync.RWMutex
 	baseURL     string
@@ -264,11 +264,7 @@ func mapUploads(mod *XMLModified) []domain.Upload {
 		}
 
 		status := domain.UploadWaiting
-		// Status-Mapping laut appleJuice Spezifikation:
-		// 1 = Übertrage (Active)
-		// 2 = Warteschlange
-		// 5, 6 = Verbindungsversuch
-		// 7 = Fehler
+		// Mapping laut appleJuice Spezifikation: 1=Active, 2=Queue, 5/6=Connecting, 7=Error
 		switch u.Status {
 		case 1:
 			status = domain.UploadTransferring
@@ -330,8 +326,7 @@ func (c *XMLCoreClient) CancelDownload(ctx context.Context, ids ...string) error
 }
 
 func (c *XMLCoreClient) SetPowerDownload(ctx context.Context, id string, powerDownload float64) error {
-	// Umrechnung: UI 1.0 -> Core 0, UI 2.0 -> Core 10
-	// Formel: CoreValue = (UIValue * 10) - 10
+	// CoreValue = (UIValue * 10) - 10
 	coreValue := int((powerDownload * 10) - 10)
 	if coreValue < -10 {
 		coreValue = -10

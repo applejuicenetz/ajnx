@@ -20,9 +20,6 @@ type Lock struct {
 	CorePort     int       `json:"core_port"`
 	CorePassword string    `json:"core_password"`
 	Nickname     string    `json:"nickname"`
-	// SessionSecret wird beim Setup einmalig generiert und für das
-	// Signieren von Session-Cookies genutzt (Phase 5).
-	// Niemals manuell setzen – wird von Complete() automatisch erzeugt.
 	SessionSecret string `json:"session_secret"`
 	// Plugins enthält die Aktivierungs-Status der einzelnen Plugins (ID -> Enabled)
 	Plugins map[string]bool `json:"plugins"`
@@ -37,8 +34,6 @@ type Manager struct {
 }
 
 // NewManager erstellt einen neuen Setup-Manager.
-// Gibt (manager, nil) zurück wenn die Lock-Datei nicht existiert oder nicht lesbar ist
-// (Setup noch nicht abgeschlossen). Gibt einen Fehler nur bei strukturell defektem JSON zurück.
 func NewManager(path string) (*Manager, error) {
 	m := &Manager{path: path}
 	if err := m.Load(); err != nil {
@@ -90,8 +85,7 @@ func (m *Manager) Complete(data Lock) error {
 	data.CompletedAt = time.Now()
 	data.Version = "1.0"
 
-	// SESSION_SECRET automatisch erzeugen (32 Byte = 64 Hex-Zeichen).
-	// Niemals überschreiben, falls bereits vorhanden (z.B. Re-Setup).
+	// SessionSecret erzeugen, falls noch nicht vorhanden
 	if data.SessionSecret == "" {
 		secret, err := generateSecret()
 		if err != nil {

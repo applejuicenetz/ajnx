@@ -127,8 +127,6 @@ func (s *Server) handleProcessLink(w http.ResponseWriter, r *http.Request) {
 	matches := linkRegex.FindAllString(payload.Link, -1)
 
 	if len(matches) == 0 {
-		// Falls kein Protokoll gefunden wurde, versuchen wir es als einen einzelnen, 
-		// evtl. unvollständigen Link zu behandeln (Legacy-Support)
 		if payload.Link != "" {
 			trimmed := strings.TrimSpace(payload.Link)
 			if trimmed != "" {

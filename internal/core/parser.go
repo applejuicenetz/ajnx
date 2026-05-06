@@ -15,7 +15,7 @@ func DecodeXML(r io.Reader, v interface{}) error {
 
 // XMLGeneralInformation für information.xml
 type XMLGeneralInformation struct {
-	XMLName xml.Name `xml:"gerneralinformation"`
+	XMLName xml.Name `xml:"applejuice"`
 	General struct {
 		Version string `xml:"version"`
 		System  string `xml:"system"`
