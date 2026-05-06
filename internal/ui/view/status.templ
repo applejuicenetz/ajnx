@@ -29,7 +29,7 @@ templ StatusPage(info *domain.Information, nickname string) {
 				<div class="col-span-12 xl:col-span-4 card-bg rounded-xl border border-white/5 shadow-card p-5 flex flex-col">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-							<span class="w-1.5 h-1.5 rounded-full bg-lime-400"></span> Welcome back
+							<span class="w-1.5 h-1.5 rounded-full bg-lime-400"></span> Willkommen zurück!
 						</div>
 						if info != nil && info.Network.ConnectedWithServer != "" {
 							<div class="flex items-center gap-1.5 px-2 py-1 rounded bg-lime-400/10 border border-lime-400/20 text-[10px] font-bold text-lime-400 uppercase tracking-wider">
@@ -38,7 +38,7 @@ templ StatusPage(info *domain.Information, nickname string) {
 							</div>
 						}
 					</div>
-					<h1 class="mt-2 text-[26px] font-semibold text-white leading-tight">Your Core is humming.</h1>
+					<h1 class="mt-2 text-[26px] font-semibold text-white leading-tight">Dein aJ Core ist online.</h1>
 					<p class="mt-1.5 text-[13.5px] text-slate-400 leading-relaxed">
 						if info != nil {
 							{ fmt.Sprint(info.Session.OpenConnections) } aktive Verbindungen und { fmt.Sprint(info.Network.Users) } Benutzer im Netzwerk. 

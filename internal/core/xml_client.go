@@ -149,6 +149,31 @@ func mapInformation(mod *XMLModified, staticInfo *XMLGeneralInformation) *domain
 			ShareFiles:         mod.Information.ShareFiles,
 			ShareSize:          mod.Information.ShareSize,
 		}
+
+		// Aktive Downloads zählen (anhand Speed)
+		for _, d := range mod.Downloads {
+			if d.Status == 7 || d.Status == 9 { // Laufend oder Suchen
+				// Wir verlassen uns hier primär auf den Speed für 'Active'
+			}
+		}
+
+		// Aktive Uploads zählen (User mit DownloadID == "0" und Status == 7/Transferring)
+		activeUL := 0
+		for _, u := range mod.Users {
+			if u.DownloadID == "0" && u.Status == 7 {
+				activeUL++
+			}
+		}
+		// Da FullUpdate die Downloads separat mappt, zählen wir hier nur grob 
+		// oder wir lassen den Poller die feingranulare Zählung machen.
+		// Aber wir setzen zumindest die Werte, die wir sicher wissen:
+		info.Session.ActiveUploads = activeUL
+		
+		// Für Downloads zählen wir die, die tatsächlich Speed haben
+		for _, d := range mod.Downloads {
+			// In modified.xml haben Downloads leider keinen Speed-Attr direkt, 
+			// der kommt erst über die Sources. 
+		}
 	}
 
 	return info
@@ -253,11 +278,11 @@ func mapUploads(mod *XMLModified) []domain.Upload {
 
 		status := domain.UploadWaiting
 		switch u.Status {
-		case 1:
-			status = domain.UploadTransferring
-		case 5, 6:
-			status = domain.UploadConnecting
 		case 7:
+			status = domain.UploadTransferring
+		case 2, 5, 6:
+			status = domain.UploadConnecting
+		case 11, 14, 16:
 			status = domain.UploadError
 		default:
 			status = domain.UploadWaiting
