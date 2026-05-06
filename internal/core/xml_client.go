@@ -115,8 +115,8 @@ func mapInformation(mod *XMLModified, staticInfo *XMLGeneralInformation) *domain
 	info := &domain.Information{}
 	if staticInfo != nil {
 		info.Core = domain.CoreInfo{
-			Version: staticInfo.General.Version,
-			OS:      parseOSType(staticInfo.General.System),
+			Version: staticInfo.Version,
+			OS:      parseOSType(staticInfo.System),
 		}
 	}
 

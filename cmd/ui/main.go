@@ -159,7 +159,7 @@ func main() {
 	guardedMain := handler.LoginGuard(setupMgr)(mainHandler)
 	finalHandler := handler.SetupGuard(setupMgr)(buildMux(mux, guardedMain))
 
-	log.Printf("AJNX UI listening on :%s", port)
+	log.Printf("aJnX UI listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
 		log.Fatal(err)
 	}

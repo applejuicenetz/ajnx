@@ -88,7 +88,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("AJNX Gateway listening on :%s", port)
+		log.Printf("aJnX Gateway listening on :%s", port)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}

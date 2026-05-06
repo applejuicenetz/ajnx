@@ -237,7 +237,7 @@ templ StatusPage(info *domain.Information, nickname string) {
 					</div>
 					<div class="mt-4 space-y-4">
 						<div class="flex justify-between items-center py-2 border-b border-white/5">
-							<span class="text-xs text-slate-400">AJNX Version</span>
+							<span class="text-xs text-slate-400">aJnX Version</span>
 							<span class={ "font-mono font-bold text-xs ", templ.KV("text-lime-400", info == nil || !info.Version.Available), templ.KV("text-rose-400", info != nil && info.Version.Available) }>
 								if info != nil {
 									V{ info.Version.Current }
