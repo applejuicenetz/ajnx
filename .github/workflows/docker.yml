@@ -49,6 +49,7 @@ jobs:
           context: .
           file: docker/gateway.Dockerfile
           push: true
+          provenance: false
           tags: ${{ steps.meta-gateway.outputs.tags }}
           labels: ${{ steps.meta-gateway.outputs.labels }}
           cache-from: type=gha
@@ -71,6 +72,7 @@ jobs:
           context: .
           file: docker/ui.Dockerfile
           push: true
+          provenance: false
           tags: ${{ steps.meta-ui.outputs.tags }}
           labels: ${{ steps.meta-ui.outputs.labels }}
           cache-from: type=gha
